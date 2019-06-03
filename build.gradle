@@ -1,6 +1,10 @@
-plugins {
-    id 'java'
+buildscript {
+    repositories {
+        jcenter()
+    }
 }
+
+apply plugin: 'java'
 
 group 'hu.whiterabbit'
 version '0.0.1'
@@ -9,8 +13,39 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+
+    maven {
+        url "https://oss.sonatype.org/content/groups/public"
+    }
+}
+
+ext {
+    // Raspberry pi
+    pi4jVersion = "1.2-SNAPSHOT"
+
+    // Logging
+    slf4jVersion = "1.7.25"
+    logbackVersion = "1.2.3"
+
+    // Test
+    junitVersion = "4.12"
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile(
+            // Raspberry pi
+            "com.pi4j:pi4j-core:${pi4jVersion}"
+    )
+    testRuntime(
+            // Logging
+            "org.slf4j:jcl-over-slf4j:${slf4jVersion}",
+            "ch.qos.logback:logback-classic:${logbackVersion}"
+    )
+    testCompile(
+            // Junit
+            "junit:junit:${junitVersion}",
+
+            // Logging
+            "org.slf4j:slf4j-api:${slf4jVersion}"
+    )
 }
