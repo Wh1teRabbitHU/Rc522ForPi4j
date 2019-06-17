@@ -2,6 +2,10 @@ package hu.whiterabbit.rc522forpi4j.service;
 
 import com.pi4j.wiringpi.Gpio;
 import com.pi4j.wiringpi.Spi;
+import hu.whiterabbit.rc522forpi4j.model.ReadResult;
+import hu.whiterabbit.rc522forpi4j.model.RequestResult;
+
+import static hu.whiterabbit.rc522forpi4j.util.DataUtil.getStatus;
 
 public class RC522Communicator {
 
@@ -360,6 +364,26 @@ public class RC522Communicator {
 		return status;
 	}
 
+	public RequestResult Request(byte req_mode) {
+		int status;
+		byte[] tagType = new byte[1];
+		byte[] data_back = new byte[16];
+		int[] back_bits = new int[1];
+		int[] backLen = new int[1];
+
+		Write_RC522(BitFramingReg, (byte) 0x07);
+
+		tagType[0] = req_mode;
+		back_bits[0] = 0;
+		status = Write_Card(PCD_TRANSCEIVE, tagType, 1, data_back, back_bits, backLen);
+
+		if (status != MI_OK || back_bits[0] != 0x10) {
+			status = MI_ERR;
+		}
+
+		return new RequestResult(getStatus(status));
+	}
+
 	//Anti-collision detection.
 	//Returns tuple of (error state, tag ID).
 	//back_data-5字节 4字节tagid+1字节校验
@@ -389,6 +413,35 @@ public class RC522Communicator {
 			}
 		}
 		return status;
+	}
+
+	public RequestResult AntiColl() {
+		int status;
+		byte[] serial_number = new byte[2];   //2字节命令
+		int serial_number_check = 0;
+		int backLen[] = new int[1];
+		int back_bits[] = new int[1];
+		byte[] tagData = new byte[5];
+		int i;
+
+		Write_RC522(BitFramingReg, (byte) 0x00);
+		serial_number[0] = PICC_ANTICOLL;
+		serial_number[1] = 0x20;
+		status = Write_Card(PCD_TRANSCEIVE, serial_number, 2, tagData, back_bits, backLen);
+		if (status == MI_OK) {
+			if (backLen[0] == 5) {
+				for (i = 0; i < 4; i++)
+					serial_number_check ^= tagData[i];
+				if (serial_number_check != tagData[4]) {
+					status = MI_ERR;
+					System.out.println("check error");
+				}
+			} else {
+				status = MI_OK;
+				System.out.println("backLen[0]=" + backLen[0]);
+			}
+		}
+		return new RequestResult(getStatus(status), tagData);
 	}
 
 	//CRC值放在data[]最后两字节
@@ -567,6 +620,25 @@ public class RC522Communicator {
 		System.arraycopy(tagid, 0, uid, 0, 5);
 
 		return status;
+	}
+
+	public ReadResult tryToReadCardTag() {
+		int[] back_bits = new int[1];
+		byte[] tagid = new byte[5];
+		RequestResult status;
+
+		status = Request(PICC_REQIDL);
+		if (!status.isSuccess()) {
+			return new ReadResult(status);
+		}
+		status = AntiColl();
+		if (!status.isSuccess()) {
+			return new ReadResult(status);
+		}
+
+		Select_Tag(status.getResponseData());
+
+		return new ReadResult(status);
 	}
 
 }

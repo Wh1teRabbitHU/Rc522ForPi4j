@@ -1,11 +1,38 @@
 package hu.whiterabbit.rc522forpi4j.service;
 
 import com.pi4j.wiringpi.Spi;
+import hu.whiterabbit.rc522forpi4j.model.ReadResult;
 import java.nio.charset.StandardCharsets;
+
+import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class RC522Reader {
 
 	private static final RC522Communicator rc522 = new RC522Communicator();
+
+	public String readTag() {
+		byte[] tagId = new byte[5];
+
+		int readStatus = rc522.Select_MirareOne(tagId);
+
+		if (readStatus == 2) {
+			return "";
+		}
+
+		return bytesToHex(tagId);
+	}
+
+	public ReadResult readBlock(int block) {
+		return null;
+	}
+
+	public ReadResult readSector(int fromBlock, int toBlock) {
+		return null;
+	}
+
+	public ReadResult readAllData() {
+		return null;
+	}
 
 	public void read() throws InterruptedException {
 		byte[] tagId = new byte[5];
@@ -19,7 +46,6 @@ public class RC522Reader {
 
 		System.out.println("Card Read UID: (HEX) " + strUID);
 
-		/*
 		for (byte sector = 0; sector < 16; sector++) {
 			for (byte block = 0; block < 4; block++) {
 				authAndReadData(sector, block, tagId);
@@ -29,7 +55,7 @@ public class RC522Reader {
 		System.out.println("Read ended");
 
 		Thread.sleep(3000);
-		 */
+
 
 		/*
 		//default key
@@ -216,19 +242,6 @@ public class RC522Reader {
 			return true;
 		else
 			return false;
-	}
-
-	private String bytesToHex(byte[] bytes) {
-		final char[] hexArray = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
-			'9', 'A', 'B', 'C', 'D', 'E', 'F' };
-		char[] hexChars = new char[bytes.length * 2];
-		int v;
-		for (int j = 0; j < bytes.length; j++) {
-			v = bytes[j] & 0xFF;
-			hexChars[j * 2] = hexArray[v >>> 4];
-			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-		}
-		return new String(hexChars);
 	}
 
 }

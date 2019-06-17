@@ -2,9 +2,13 @@ buildscript {
     repositories {
         jcenter()
     }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
 }
 
 apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 group 'hu.whiterabbit'
 version '0.0.1'
@@ -29,14 +33,19 @@ ext {
 
     // Test
     junitVersion = "4.12"
+
+    defaultExampleClass = "ReadData"
 }
 
 dependencies {
     compile(
             // Raspberry pi
-            "com.pi4j:pi4j-core:${pi4jVersion}"
+            "com.pi4j:pi4j-core:${pi4jVersion}",
+
+            // Logging
+            "org.slf4j:slf4j-api:${slf4jVersion}"
     )
-    testRuntime(
+    runtime(
             // Logging
             "org.slf4j:jcl-over-slf4j:${slf4jVersion}",
             "ch.qos.logback:logback-classic:${logbackVersion}"
@@ -44,8 +53,22 @@ dependencies {
     testCompile(
             // Junit
             "junit:junit:${junitVersion}",
-
-            // Logging
-            "org.slf4j:slf4j-api:${slf4jVersion}"
     )
+}
+
+jar {
+    manifest {
+        attributes('Main-Class': 'hu.whiterabbit.rc522forpi4j.example.' + (project.hasProperty('exampleClass') ? project.exampleClass : defaultExampleClass))
+    }
+}
+
+shadowJar {
+    baseName = "rc522forpi4j-example-" + (project.hasProperty('exampleClass') ? project.exampleClass : defaultExampleClass)
+    destinationDir = file("examples")
+    classifier = ""
+    version = ""
+}
+
+wrapper {
+    gradleVersion = '4.10'
 }
