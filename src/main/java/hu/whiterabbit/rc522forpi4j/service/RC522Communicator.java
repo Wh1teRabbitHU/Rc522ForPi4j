@@ -4,242 +4,73 @@ import com.pi4j.wiringpi.Gpio;
 import com.pi4j.wiringpi.Spi;
 import hu.whiterabbit.rc522forpi4j.model.ReadResult;
 import hu.whiterabbit.rc522forpi4j.model.RequestResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.*;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.getStatus;
 
 public class RC522Communicator {
 
-	private int NRSTPD = 22;        //RST Pin number,default 22
+	private static final Logger logger = LoggerFactory.getLogger(RC522Communicator.class);
 
-	private int Speed = 500000;
+	private final int resetPin;        //RST Pin number,default 22
 
-	private int SPI_Channel = 0;
+	private final int speed;
 
-	private final int MAX_LEN = 16; //扇区字节数
+	private static final int SPI_Channel = 0;
 
-	//RC522命令字
-	public static final byte PCD_IDLE = 0x00;
-
-	public static final byte PCD_AUTHENT = 0x0E;
-
-	public static final byte PCD_RECEIVE = 0x08;
-
-	public static final byte PCD_TRANSMIT = 0x04;
-
-	public static final byte PCD_TRANSCEIVE = 0x0C;
-
-	public static final byte PCD_RESETPHASE = 0x0F;
-
-	public static final byte PCD_CALCCRC = 0x03;
-
-	//PICC命令字
-	public static final byte PICC_REQIDL = 0x26;
-
-	public static final byte PICC_REQALL = 0x52;
-
-	public static final byte PICC_ANTICOLL = (byte) 0x93;
-
-	public static final byte PICC_SElECTTAG = (byte) 0x93;
-
-	public static final byte PICC_AUTHENT1A = 0x60;
-
-	public static final byte PICC_AUTHENT1B = 0x61;
-
-	public static final byte PICC_READ = 0x30;
-
-	public static final byte PICC_WRITE = (byte) 0xA0;
-
-	public static final byte PICC_DECREMENT = (byte) 0xC0;
-
-	public static final byte PICC_INCREMENT = (byte) 0xC1;
-
-	public static final byte PICC_RESTORE = (byte) 0xC2;
-
-	public static final byte PICC_TRANSFER = (byte) 0xB0;
-
-	public static final byte PICC_HALT = 0x50;
-
-	//返回状态
-	public static final int MI_OK = 0;
-
-	public static final int MI_NOTAGERR = 1;
-
-	public static final int MI_ERR = 2;
-
-	//RC522寄存器地址
-	public static final byte Reserved00 = 0x00;
-
-	public static final byte CommandReg = 0x01;
-
-	public static final byte CommIEnReg = 0x02;
-
-	public static final byte DivlEnReg = 0x03;
-
-	public static final byte CommIrqReg = 0x04;
-
-	public static final byte DivIrqReg = 0x05;
-
-	public static final byte ErrorReg = 0x06;
-
-	public static final byte Status1Reg = 0x07;
-
-	public static final byte Status2Reg = 0x08;
-
-	public static final byte FIFODataReg = 0x09;
-
-	public static final byte FIFOLevelReg = 0x0A;
-
-	public static final byte WaterLevelReg = 0x0B;
-
-	public static final byte ControlReg = 0x0C;
-
-	public static final byte BitFramingReg = 0x0D;
-
-	public static final byte CollReg = 0x0E;
-
-	public static final byte Reserved01 = 0x0F;
-
-	public static final byte Reserved10 = 0x10;
-
-	public static final byte ModeReg = 0x11;
-
-	public static final byte TxModeReg = 0x12;
-
-	public static final byte RxModeReg = 0x13;
-
-	public static final byte TxControlReg = 0x14;
-
-	public static final byte TxAutoReg = 0x15;
-
-	public static final byte TxSelReg = 0x16;
-
-	public static final byte RxSelReg = 0x17;
-
-	public static final byte RxThresholdReg = 0x18;
-
-	public static final byte DemodReg = 0x19;
-
-	public static final byte Reserved11 = 0x1A;
-
-	public static final byte Reserved12 = 0x1B;
-
-	public static final byte MifareReg = 0x1C;
-
-	public static final byte Reserved13 = 0x1D;
-
-	public static final byte Reserved14 = 0x1E;
-
-	public static final byte SerialSpeedReg = 0x1F;
-
-	public static final byte Reserved20 = 0x20;
-
-	public static final byte CRCResultRegM = 0x21;
-
-	public static final byte CRCResultRegL = 0x22;
-
-	public static final byte Reserved21 = 0x23;
-
-	public static final byte ModWidthReg = 0x24;
-
-	public static final byte Reserved22 = 0x25;
-
-	public static final byte RFCfgReg = 0x26;
-
-	public static final byte GsNReg = 0x27;
-
-	public static final byte CWGsPReg = 0x28;
-
-	public static final byte ModGsPReg = 0x29;
-
-	public static final byte TModeReg = 0x2A;
-
-	public static final byte TPrescalerReg = 0x2B;
-
-	public static final byte TReloadRegH = 0x2C;
-
-	public static final byte TReloadRegL = 0x2D;
-
-	public static final byte TCounterValueRegH = 0x2E;
-
-	public static final byte TCounterValueRegL = 0x2F;
-
-	public static final byte Reserved30 = 0x30;
-
-	public static final byte TestSel1Reg = 0x31;
-
-	public static final byte TestSel2Reg = 0x32;
-
-	public static final byte TestPinEnReg = 0x33;
-
-	public static final byte TestPinValueReg = 0x34;
-
-	public static final byte TestBusReg = 0x35;
-
-	public static final byte AutoTestReg = 0x36;
-
-	public static final byte VersionReg = 0x37;
-
-	public static final byte AnalogTestReg = 0x38;
-
-	public static final byte TestDAC1Reg = 0x39;
-
-	public static final byte TestDAC2Reg = 0x3A;
-
-	public static final byte TestADCReg = 0x3B;
-
-	public static final byte Reserved31 = 0x3C;
-
-	public static final byte Reserved32 = 0x3D;
-
-	public static final byte Reserved33 = 0x3E;
-
-	public static final byte Reserved34 = 0x3F;
+	private static final int MAX_LEN = 16; //扇区字节数
 
 	public RC522Communicator() {
-		this.Speed = 500000;
+		this.resetPin = 22;
+		this.speed = 500000;
+
 		init();
 	}
 
-	public RC522Communicator(int Speed, int PinReset) {
-		this.NRSTPD = PinReset;
-		if (Speed < 500000 || Speed > 32000000) {
-			System.out.println("Speed out of range");
+	public RC522Communicator(int speed, int resetPin) {
+		this.resetPin = resetPin;
+		this.speed = speed;
+
+		if (speed < 500000 || speed > 32000000) {
+			logger.error("Speed out of range: {}", speed);
+
 			return;
-		} else this.Speed = Speed;
+		}
+
 		init();
 	}
 
-
-	public void init() {
-		this.Speed = 500000;
+	private void init() {
 		Gpio.wiringPiSetup();           //Enable wiringPi pin schema
-		int fd = Spi.wiringPiSPISetup(SPI_Channel, Speed);
+		int fd = Spi.wiringPiSPISetup(SPI_Channel, speed);
 		if (fd <= -1) {
-			System.out.println(" --> Failed to set up  SPI communication");
+			logger.error(" --> Failed to set up  SPI communication");
 			//Stop code when error happened
 			return;
 		} else {
-			System.out.println(" --> Successfully loaded SPI communication");
+			logger.info(" --> Successfully loaded SPI communication");
 		}
 
-		Gpio.pinMode(NRSTPD, Gpio.OUTPUT);
-		Gpio.digitalWrite(NRSTPD, Gpio.HIGH);
+		Gpio.pinMode(resetPin, Gpio.OUTPUT);
+		Gpio.digitalWrite(resetPin, Gpio.HIGH);
 		Reset();
-		Write_RC522(TModeReg, (byte) 0x8D);
-		Write_RC522(TPrescalerReg, (byte) 0x3E);
-		Write_RC522(TReloadRegL, (byte) 30);
-		Write_RC522(TReloadRegH, (byte) 0);
-		Write_RC522(TxAutoReg, (byte) 0x40);
-		Write_RC522(ModeReg, (byte) 0x3D);
+		Write_RC522(T_MODE_REG, (byte) 0x8D);
+		Write_RC522(T_PRESCALER_REG, (byte) 0x3E);
+		Write_RC522(T_RELOAD_REG_L, (byte) 30);
+		Write_RC522(T_RELOAD_REG_H, (byte) 0);
+		Write_RC522(TX_AUTO_REG, (byte) 0x40);
+		Write_RC522(MODE_REG, (byte) 0x3D);
 		AntennaOn();
 	}
 
 	private void Reset() {
-		Write_RC522(CommandReg, PCD_RESETPHASE);
+		Write_RC522(COMMAND_REG, PCD_RESETPHASE);
 	}
 
 	private void Write_RC522(byte address, byte value) {
-		byte data[] = new byte[2];
+		byte[] data = new byte[2];
 		data[0] = (byte) ((address << 1) & 0x7E);
 		data[1] = value;
 		int result = Spi.wiringPiSPIDataRW(SPI_Channel, data);
@@ -268,13 +99,13 @@ public class RC522Communicator {
 	}
 
 	private void AntennaOn() {
-		byte value = Read_RC522(TxControlReg);
+		byte value = Read_RC522(TX_CONTROL_REG);
 		//   if((value & 0x03) != 0x03)
-		SetBitMask(TxControlReg, (byte) 0x03);
+		SetBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
 	private void AntennaOff() {
-		ClearBitMask(TxControlReg, (byte) 0x03);
+		ClearBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
 	//back_data-最长不超过Length=16;
@@ -295,38 +126,38 @@ public class RC522Communicator {
 			irq_wait = 0x30;
 		}
 
-		Write_RC522(CommIEnReg, (byte) (irq | 0x80));
-		ClearBitMask(CommIrqReg, (byte) 0x80);
-		SetBitMask(FIFOLevelReg, (byte) 0x80);
+		Write_RC522(COMM_I_EN_REG, (byte) (irq | 0x80));
+		ClearBitMask(COMM_IRQ_REG, (byte) 0x80);
+		SetBitMask(FIFO_LEVEL_REG, (byte) 0x80);
 
-		Write_RC522(CommandReg, PCD_IDLE);
+		Write_RC522(COMMAND_REG, PCD_IDLE);
 
 		for (i = 0; i < dataLen; i++)
-			Write_RC522(FIFODataReg, data[i]);
+			Write_RC522(FIFO_DATA_REG, data[i]);
 
-		Write_RC522(CommandReg, command);
+		Write_RC522(COMMAND_REG, command);
 		if (command == PCD_TRANSCEIVE)
-			SetBitMask(BitFramingReg, (byte) 0x80);
+			SetBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		i = 2000;
 		while (true) {
-			n = Read_RC522(CommIrqReg);
+			n = Read_RC522(COMM_IRQ_REG);
 			i--;
 			if ((i == 0) || (n & 0x01) > 0 || (n & irq_wait) > 0) {
 				//System.out.println("Write_Card i="+i+",n="+n);
 				break;
 			}
 		}
-		ClearBitMask(BitFramingReg, (byte) 0x80);
+		ClearBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		if (i != 0) {
-			if ((Read_RC522(ErrorReg) & 0x1B) == 0x00) {
+			if ((Read_RC522(ERROR_REG) & 0x1B) == 0x00) {
 				status = MI_OK;
 				if ((n & irq & 0x01) > 0)
 					status = MI_NOTAGERR;
 				if (command == PCD_TRANSCEIVE) {
-					n = Read_RC522(FIFOLevelReg);
-					lastBits = (byte) (Read_RC522(ControlReg) & 0x07);
+					n = Read_RC522(FIFO_LEVEL_REG);
+					lastBits = (byte) (Read_RC522(CONTROL_REG) & 0x07);
 					if (lastBits != 0)
 						back_bits[0] = (n - 1) * 8 + lastBits;
 					else
@@ -336,7 +167,7 @@ public class RC522Communicator {
 					if (n > this.MAX_LEN) n = this.MAX_LEN;
 					backLen[0] = n;
 					for (i = 0; i < n; i++)
-						back_data[i] = Read_RC522(FIFODataReg);
+						back_data[i] = Read_RC522(FIFO_DATA_REG);
 				}
 			} else
 				status = MI_ERR;
@@ -351,7 +182,7 @@ public class RC522Communicator {
 		byte data_back[] = new byte[16];
 		int backLen[] = new int[1];
 
-		Write_RC522(BitFramingReg, (byte) 0x07);
+		Write_RC522(BIT_FRAMING_REG, (byte) 0x07);
 
 		tagType[0] = req_mode;
 		back_bits[0] = 0;
@@ -371,7 +202,7 @@ public class RC522Communicator {
 		int[] back_bits = new int[1];
 		int[] backLen = new int[1];
 
-		Write_RC522(BitFramingReg, (byte) 0x07);
+		Write_RC522(BIT_FRAMING_REG, (byte) 0x07);
 
 		tagType[0] = req_mode;
 		back_bits[0] = 0;
@@ -395,7 +226,7 @@ public class RC522Communicator {
 		int back_bits[] = new int[1];
 		int i;
 
-		Write_RC522(BitFramingReg, (byte) 0x00);
+		Write_RC522(BIT_FRAMING_REG, (byte) 0x00);
 		serial_number[0] = PICC_ANTICOLL;
 		serial_number[1] = 0x20;
 		status = Write_Card(PCD_TRANSCEIVE, serial_number, 2, back_data, back_bits, backLen);
@@ -424,7 +255,7 @@ public class RC522Communicator {
 		byte[] tagData = new byte[5];
 		int i;
 
-		Write_RC522(BitFramingReg, (byte) 0x00);
+		Write_RC522(BIT_FRAMING_REG, (byte) 0x00);
 		serial_number[0] = PICC_ANTICOLL;
 		serial_number[1] = 0x20;
 		status = Write_Card(PCD_TRANSCEIVE, serial_number, 2, tagData, back_bits, backLen);
@@ -447,21 +278,21 @@ public class RC522Communicator {
 	//CRC值放在data[]最后两字节
 	private void Calculate_CRC(byte[] data) {
 		int i, n;
-		ClearBitMask(DivIrqReg, (byte) 0x04);
-		SetBitMask(FIFOLevelReg, (byte) 0x80);
+		ClearBitMask(DIV_IRQ_REG, (byte) 0x04);
+		SetBitMask(FIFO_LEVEL_REG, (byte) 0x80);
 
 		for (i = 0; i < data.length - 2; i++)
-			Write_RC522(FIFODataReg, data[i]);
-		Write_RC522(CommandReg, PCD_CALCCRC);
+			Write_RC522(FIFO_DATA_REG, data[i]);
+		Write_RC522(COMMAND_REG, PCD_CALCCRC);
 		i = 255;
 		while (true) {
-			n = Read_RC522(DivIrqReg);
+			n = Read_RC522(DIV_IRQ_REG);
 			i--;
 			if ((i == 0) || ((n & 0x04) > 0))
 				break;
 		}
-		data[data.length - 2] = Read_RC522(CRCResultRegL);
-		data[data.length - 1] = Read_RC522(CRCResultRegM);
+		data[data.length - 2] = Read_RC522(CRC_RESULT_REG_L);
+		data[data.length - 1] = Read_RC522(CRC_RESULT_REG_M);
 	}
 
 	//uid-5字节数组,存放序列号
@@ -506,7 +337,7 @@ public class RC522Communicator {
 			data[j] = uid[i];
 
 		status = Write_Card(PCD_AUTHENT, data, 12, back_data, back_bits, backLen);
-		if ((Read_RC522(Status2Reg) & 0x08) == 0) status = MI_ERR;
+		if ((Read_RC522(STATUS_2_REG) & 0x08) == 0) status = MI_ERR;
 		return status;
 	}
 
@@ -517,7 +348,7 @@ public class RC522Communicator {
 
 	//Ends operations with Crypto1 usage.
 	public void Stop_Crypto() {
-		ClearBitMask(Status2Reg, (byte) 0x08);
+		ClearBitMask(STATUS_2_REG, (byte) 0x08);
 	}
 
 	//Reads data from block. You should be authenticated before calling read.
