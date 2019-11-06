@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.*;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.getStatus;
 
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class RC522Communicator {
 
 	private static final Logger logger = LoggerFactory.getLogger(RC522Communicator.class);
@@ -55,21 +56,21 @@ public class RC522Communicator {
 
 		Gpio.pinMode(resetPin, Gpio.OUTPUT);
 		Gpio.digitalWrite(resetPin, Gpio.HIGH);
-		Reset();
-		Write_RC522(T_MODE_REG, (byte) 0x8D);
-		Write_RC522(T_PRESCALER_REG, (byte) 0x3E);
-		Write_RC522(T_RELOAD_REG_L, (byte) 30);
-		Write_RC522(T_RELOAD_REG_H, (byte) 0);
-		Write_RC522(TX_AUTO_REG, (byte) 0x40);
-		Write_RC522(MODE_REG, (byte) 0x3D);
-		AntennaOn();
+		reset();
+		writeRC522(T_MODE_REG, (byte) 0x8D);
+		writeRC522(T_PRESCALER_REG, (byte) 0x3E);
+		writeRC522(T_RELOAD_REG_L, (byte) 30);
+		writeRC522(T_RELOAD_REG_H, (byte) 0);
+		writeRC522(TX_AUTO_REG, (byte) 0x40);
+		writeRC522(MODE_REG, (byte) 0x3D);
+		antennaOn();
 	}
 
-	private void Reset() {
-		Write_RC522(COMMAND_REG, PCD_RESETPHASE);
+	private void reset() {
+		writeRC522(COMMAND_REG, PCD_RESETPHASE);
 	}
 
-	private void Write_RC522(byte address, byte value) {
+	private void writeRC522(byte address, byte value) {
 		byte[] data = new byte[2];
 		data[0] = (byte) ((address << 1) & 0x7E);
 		data[1] = value;
@@ -78,44 +79,40 @@ public class RC522Communicator {
 			System.out.println("Device write  error,address=" + address + ",value=" + value);
 	}
 
-	private byte Read_RC522(byte address) {
-		byte data[] = new byte[2];
+	private byte readRC522(byte address) {
+		byte[] data = new byte[2];
 		data[0] = (byte) (((address << 1) & 0x7E) | 0x80);
-		data[1] = 0;
 		int result = Spi.wiringPiSPIDataRW(SPI_Channel, data);
 		if (result == -1)
 			System.out.println("Device read  error,address=" + address);
 		return data[1];
 	}
 
-	private void SetBitMask(byte address, byte mask) {
-		byte value = Read_RC522(address);
-		Write_RC522(address, (byte) (value | mask));
+	private void setBitMask(byte address, byte mask) {
+		byte value = readRC522(address);
+		writeRC522(address, (byte) (value | mask));
 	}
 
-	private void ClearBitMask(byte address, byte mask) {
-		byte value = Read_RC522(address);
-		Write_RC522(address, (byte) (value & (~mask)));
+	private void clearBitMask(byte address, byte mask) {
+		byte value = readRC522(address);
+		writeRC522(address, (byte) (value & (~mask)));
 	}
 
-	private void AntennaOn() {
-		byte value = Read_RC522(TX_CONTROL_REG);
+	private void antennaOn() {
+		byte value = readRC522(TX_CONTROL_REG);
 		//   if((value & 0x03) != 0x03)
-		SetBitMask(TX_CONTROL_REG, (byte) 0x03);
+		setBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
-	private void AntennaOff() {
-		ClearBitMask(TX_CONTROL_REG, (byte) 0x03);
+	private void antennaOff() {
+		clearBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
-	//back_data-最长不超过Length=16;
-	//back_data-返回数据
-	//back_bits-返回比特数
-	//backLen-返回字节数
-	private int Write_Card(byte command, byte[] data, int dataLen, byte[] back_data, int[] back_bits, int[] backLen) {
+	private int writeCard(byte command, byte[] data, int dataLen, byte[] back_data, int[] back_bits, int[] backLen) {
 		int status = MI_ERR;
-		byte irq = 0, irq_wait = 0, lastBits = 0;
-		int n = 0, i = 0;
+		byte irq = 0, irq_wait = 0, lastBits;
+		int n;
+		int i;
 
 		backLen[0] = 0;
 		if (command == PCD_AUTHENT) {
@@ -126,67 +123,64 @@ public class RC522Communicator {
 			irq_wait = 0x30;
 		}
 
-		Write_RC522(COMM_I_EN_REG, (byte) (irq | 0x80));
-		ClearBitMask(COMM_IRQ_REG, (byte) 0x80);
-		SetBitMask(FIFO_LEVEL_REG, (byte) 0x80);
+		writeRC522(COMM_I_EN_REG, (byte) (irq | 0x80));
+		clearBitMask(COMM_IRQ_REG, (byte) 0x80);
+		setBitMask(FIFO_LEVEL_REG, (byte) 0x80);
 
-		Write_RC522(COMMAND_REG, PCD_IDLE);
+		writeRC522(COMMAND_REG, PCD_IDLE);
 
 		for (i = 0; i < dataLen; i++)
-			Write_RC522(FIFO_DATA_REG, data[i]);
+			writeRC522(FIFO_DATA_REG, data[i]);
 
-		Write_RC522(COMMAND_REG, command);
+		writeRC522(COMMAND_REG, command);
 		if (command == PCD_TRANSCEIVE)
-			SetBitMask(BIT_FRAMING_REG, (byte) 0x80);
+			setBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		i = 2000;
-		while (true) {
-			n = Read_RC522(COMM_IRQ_REG);
+		//System.out.println("Write_Card i="+i+",n="+n);
+		do {
+			n = readRC522(COMM_IRQ_REG);
 			i--;
-			if ((i == 0) || (n & 0x01) > 0 || (n & irq_wait) > 0) {
-				//System.out.println("Write_Card i="+i+",n="+n);
-				break;
-			}
-		}
-		ClearBitMask(BIT_FRAMING_REG, (byte) 0x80);
+		} while ((i != 0) && (n & 0x01) <= 0 && (n & irq_wait) <= 0);
+
+		clearBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		if (i != 0) {
-			if ((Read_RC522(ERROR_REG) & 0x1B) == 0x00) {
+			if ((readRC522(ERROR_REG) & 0x1B) == 0x00) {
 				status = MI_OK;
 				if ((n & irq & 0x01) > 0)
 					status = MI_NOTAGERR;
 				if (command == PCD_TRANSCEIVE) {
-					n = Read_RC522(FIFO_LEVEL_REG);
-					lastBits = (byte) (Read_RC522(CONTROL_REG) & 0x07);
+					n = readRC522(FIFO_LEVEL_REG);
+					lastBits = (byte) (readRC522(CONTROL_REG) & 0x07);
 					if (lastBits != 0)
 						back_bits[0] = (n - 1) * 8 + lastBits;
 					else
 						back_bits[0] = n * 8;
 
 					if (n == 0) n = 1;
-					if (n > this.MAX_LEN) n = this.MAX_LEN;
+					if (n > MAX_LEN) n = MAX_LEN;
 					backLen[0] = n;
 					for (i = 0; i < n; i++)
-						back_data[i] = Read_RC522(FIFO_DATA_REG);
+						back_data[i] = readRC522(FIFO_DATA_REG);
 				}
-			} else
-				status = MI_ERR;
+			}
 		}
+
 		return status;
 	}
 
-	public int Request(byte req_mode, int[] back_bits) //参数为1字节数组
-	{
+	public int request(byte req_mode, int[] back_bits) {
 		int status;
-		byte tagType[] = new byte[1];
-		byte data_back[] = new byte[16];
-		int backLen[] = new int[1];
+		byte[] tagType = new byte[1];
+		byte[] data_back = new byte[16];
+		int[] backLen = new int[1];
 
-		Write_RC522(BIT_FRAMING_REG, (byte) 0x07);
+		writeRC522(BIT_FRAMING_REG, (byte) 0x07);
 
 		tagType[0] = req_mode;
 		back_bits[0] = 0;
-		status = Write_Card(PCD_TRANSCEIVE, tagType, 1, data_back, back_bits, backLen);
+		status = writeCard(PCD_TRANSCEIVE, tagType, 1, data_back, back_bits, backLen);
 		if (status != MI_OK || back_bits[0] != 0x10) {
 			//System.out.println("status="+status+",back_bits[0]="+back_bits[0]);
 			status = MI_ERR;
@@ -195,18 +189,16 @@ public class RC522Communicator {
 		return status;
 	}
 
-	public RequestResult Request(byte req_mode) {
-		int status;
+	public RequestResult request(byte req_mode) {
 		byte[] tagType = new byte[1];
 		byte[] data_back = new byte[16];
 		int[] back_bits = new int[1];
 		int[] backLen = new int[1];
 
-		Write_RC522(BIT_FRAMING_REG, (byte) 0x07);
+		writeRC522(BIT_FRAMING_REG, (byte) 0x07);
 
 		tagType[0] = req_mode;
-		back_bits[0] = 0;
-		status = Write_Card(PCD_TRANSCEIVE, tagType, 1, data_back, back_bits, backLen);
+		int status = writeCard(PCD_TRANSCEIVE, tagType, 1, data_back, back_bits, backLen);
 
 		if (status != MI_OK || back_bits[0] != 0x10) {
 			status = MI_ERR;
@@ -217,48 +209,45 @@ public class RC522Communicator {
 
 	//Anti-collision detection.
 	//Returns tuple of (error state, tag ID).
-	//back_data-5字节 4字节tagid+1字节校验
-	public int AntiColl(byte[] back_data) {
-		int status;
+	public int antiColl(byte[] back_data) {
 		byte[] serial_number = new byte[2];   //2字节命令
 		int serial_number_check = 0;
-		int backLen[] = new int[1];
-		int back_bits[] = new int[1];
-		int i;
+		int[] backLen = new int[1];
+		int[] back_bits = new int[1];
 
-		Write_RC522(BIT_FRAMING_REG, (byte) 0x00);
+		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
 		serial_number[0] = PICC_ANTICOLL;
 		serial_number[1] = 0x20;
-		status = Write_Card(PCD_TRANSCEIVE, serial_number, 2, back_data, back_bits, backLen);
+		int status = writeCard(PCD_TRANSCEIVE, serial_number, 2, back_data, back_bits, backLen);
 		if (status == MI_OK) {
 			if (backLen[0] == 5) {
-				for (i = 0; i < 4; i++)
+				for (int i = 0; i < 4; i++)
 					serial_number_check ^= back_data[i];
 				if (serial_number_check != back_data[4]) {
 					status = MI_ERR;
 					System.out.println("check error");
 				}
 			} else {
-				status = MI_OK;
 				System.out.println("backLen[0]=" + backLen[0]);
 			}
 		}
 		return status;
 	}
 
-	public RequestResult AntiColl() {
+	public RequestResult antiColl() {
 		int status;
 		byte[] serial_number = new byte[2];   //2字节命令
 		int serial_number_check = 0;
-		int backLen[] = new int[1];
-		int back_bits[] = new int[1];
+		int[] backLen = new int[1];
+		int[] back_bits = new int[1];
 		byte[] tagData = new byte[5];
 		int i;
 
-		Write_RC522(BIT_FRAMING_REG, (byte) 0x00);
+		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
 		serial_number[0] = PICC_ANTICOLL;
 		serial_number[1] = 0x20;
-		status = Write_Card(PCD_TRANSCEIVE, serial_number, 2, tagData, back_bits, backLen);
+		status = writeCard(PCD_TRANSCEIVE, serial_number, 2, tagData, back_bits, backLen);
+
 		if (status == MI_OK) {
 			if (backLen[0] == 5) {
 				for (i = 0; i < 4; i++)
@@ -268,50 +257,46 @@ public class RC522Communicator {
 					System.out.println("check error");
 				}
 			} else {
-				status = MI_OK;
 				System.out.println("backLen[0]=" + backLen[0]);
 			}
 		}
+
 		return new RequestResult(getStatus(status), tagData);
 	}
 
-	//CRC值放在data[]最后两字节
-	private void Calculate_CRC(byte[] data) {
+	private void calculateCRC(byte[] data) {
 		int i, n;
-		ClearBitMask(DIV_IRQ_REG, (byte) 0x04);
-		SetBitMask(FIFO_LEVEL_REG, (byte) 0x80);
+		clearBitMask(DIV_IRQ_REG, (byte) 0x04);
+		setBitMask(FIFO_LEVEL_REG, (byte) 0x80);
 
 		for (i = 0; i < data.length - 2; i++)
-			Write_RC522(FIFO_DATA_REG, data[i]);
-		Write_RC522(COMMAND_REG, PCD_CALCCRC);
+			writeRC522(FIFO_DATA_REG, data[i]);
+		writeRC522(COMMAND_REG, PCD_CALCCRC);
 		i = 255;
-		while (true) {
-			n = Read_RC522(DIV_IRQ_REG);
+		do {
+			n = readRC522(DIV_IRQ_REG);
 			i--;
-			if ((i == 0) || ((n & 0x04) > 0))
-				break;
-		}
-		data[data.length - 2] = Read_RC522(CRC_RESULT_REG_L);
-		data[data.length - 1] = Read_RC522(CRC_RESULT_REG_M);
+		} while ((i != 0) && ((n & 0x04) <= 0));
+
+		data[data.length - 2] = readRC522(CRC_RESULT_REG_L);
+		data[data.length - 1] = readRC522(CRC_RESULT_REG_M);
 	}
 
-	//uid-5字节数组,存放序列号
-	//返值是大小
-	public int Select_Tag(byte[] uid) {
+	public int selectTag(byte[] uid) {
 		int status;
-		byte data[] = new byte[9];
-		byte back_data[] = new byte[this.MAX_LEN];
-		int back_bits[] = new int[1];
-		int backLen[] = new int[1];
+		byte[] data = new byte[9];
+		byte[] back_data = new byte[MAX_LEN];
+		int[] back_bits = new int[1];
+		int[] backLen = new int[1];
 		int i, j;
 
 		data[0] = PICC_SElECTTAG;
 		data[1] = 0x70;
 		for (i = 0, j = 2; i < 5; i++, j++)
 			data[j] = uid[i];
-		Calculate_CRC(data);
+		calculateCRC(data);
 
-		status = Write_Card(PCD_TRANSCEIVE, data, 9, back_data, back_bits, backLen);
+		status = writeCard(PCD_TRANSCEIVE, data, 9, back_data, back_bits, backLen);
 		if (status == MI_OK && back_bits[0] == 0x18) return back_data[0];
 		else return 0;
 	}
@@ -321,12 +306,12 @@ public class RC522Communicator {
 	//block_address- used to authenticate
 	//key-list or tuple(数组) with six bytes key
 	//uid-list or tuple with four bytes tag ID
-	public int Auth_Card(byte auth_mode, byte block_address, byte[] key, byte[] uid) {
+	public int authCard(byte auth_mode, byte block_address, byte[] key, byte[] uid) {
 		int status;
-		byte data[] = new byte[12];
-		byte back_data[] = new byte[this.MAX_LEN];
-		int back_bits[] = new int[1];
-		int backLen[] = new int[1];
+		byte[] data = new byte[12];
+		byte[] back_data = new byte[MAX_LEN];
+		int[] back_bits = new int[1];
+		int[] backLen = new int[1];
 		int i, j;
 
 		data[0] = auth_mode;
@@ -336,69 +321,69 @@ public class RC522Communicator {
 		for (i = 0, j = 8; i < 4; i++, j++)
 			data[j] = uid[i];
 
-		status = Write_Card(PCD_AUTHENT, data, 12, back_data, back_bits, backLen);
-		if ((Read_RC522(STATUS_2_REG) & 0x08) == 0) status = MI_ERR;
+		status = writeCard(PCD_AUTHENT, data, 12, back_data, back_bits, backLen);
+		if ((readRC522(STATUS_2_REG) & 0x08) == 0) status = MI_ERR;
 		return status;
 	}
 
 	//
-	public int Auth_Card(byte auth_mode, byte sector, byte block, byte[] key, byte[] uid) {
-		return Auth_Card(auth_mode, Sector2BlockAddress(sector, block), key, uid);
+	public int authCard(byte auth_mode, byte sector, byte block, byte[] key, byte[] uid) {
+		return authCard(auth_mode, sector2BlockAddress(sector, block), key, uid);
 	}
 
 	//Ends operations with Crypto1 usage.
-	public void Stop_Crypto() {
-		ClearBitMask(STATUS_2_REG, (byte) 0x08);
+	public void stopCrypto() {
+		clearBitMask(STATUS_2_REG, (byte) 0x08);
 	}
 
 	//Reads data from block. You should be authenticated before calling read.
 	//Returns tuple of (result state, read data).
 	//block_address
 	//back_data-data to be read,16 bytes
-	public int Read(byte block_address, byte[] back_data) {
+	public int read(byte block_address, byte[] back_data) {
 		int status;
-		byte data[] = new byte[4];
-		int back_bits[] = new int[1];
-		int backLen[] = new int[1];
+		byte[] data = new byte[4];
+		int[] back_bits = new int[1];
+		int[] backLen = new int[1];
 		int i, j;
 
 		data[0] = PICC_READ;
 		data[1] = block_address;
-		Calculate_CRC(data);
-		status = Write_Card(PCD_TRANSCEIVE, data, data.length, back_data, back_bits, backLen);
+		calculateCRC(data);
+		status = writeCard(PCD_TRANSCEIVE, data, data.length, back_data, back_bits, backLen);
 		if (backLen[0] == 16) status = MI_OK;
 		return status;
 	}
 
 	//
-	public int Read(byte sector, byte block, byte[] back_data) {
-		return Read(Sector2BlockAddress(sector, block), back_data);
+	public int read(byte sector, byte block, byte[] back_data) {
+		return read(sector2BlockAddress(sector, block), back_data);
 	}
 
 	//Writes data to block. You should be authenticated before calling write.
 	//Returns error state.
 	//data-16 bytes
-	public int Write(byte block_address, byte[] data) {
+	public int write(byte block_address, byte[] data) {
 		int status;
-		byte buff[] = new byte[4];
-		byte buff_write[] = new byte[data.length + 2];
-		byte back_data[] = new byte[this.MAX_LEN];
-		int back_bits[] = new int[1];
-		int backLen[] = new int[1];
+		byte[] buff = new byte[4];
+		byte[] buff_write = new byte[data.length + 2];
+		byte[] back_data = new byte[MAX_LEN];
+		int[] back_bits = new int[1];
+		int[] backLen = new int[1];
 		int i;
 
 		buff[0] = PICC_WRITE;
 		buff[1] = block_address;
-		Calculate_CRC(buff);
-		status = Write_Card(PCD_TRANSCEIVE, buff, buff.length, back_data, back_bits, backLen);
+		calculateCRC(buff);
+		status = writeCard(PCD_TRANSCEIVE, buff, buff.length, back_data, back_bits, backLen);
 		//System.out.println("write_card  status="+status);
 		//System.out.println("back_bits[0]="+back_bits[0]+",(back_data[0] & 0x0F)="+(back_data[0] & 0x0F));
 		if (status != MI_OK || back_bits[0] != 4 || (back_data[0] & 0x0F) != 0x0A) status = MI_ERR;
 		if (status == MI_OK) {
 			for (i = 0; i < data.length; i++)
 				buff_write[i] = data[i];
-			Calculate_CRC(buff_write);
-			status = Write_Card(PCD_TRANSCEIVE, buff_write, buff_write.length, back_data, back_bits, backLen);
+			calculateCRC(buff_write);
+			status = writeCard(PCD_TRANSCEIVE, buff_write, buff_write.length, back_data, back_bits, backLen);
 			//System.out.println("write_card data status="+status);
 			//System.out.println("back_bits[0]="+back_bits[0]+",(back_data[0] & 0x0F)="+(back_data[0] & 0x0F));
 			if (status != MI_OK || back_bits[0] != 4 || (back_data[0] & 0x0F) != 0x0A) status = MI_ERR;
@@ -407,24 +392,24 @@ public class RC522Communicator {
 	}
 
 	//
-	public int Write(byte sector, byte block, byte[] data) {
-		return Write(Sector2BlockAddress(sector, block), data);
+	public int write(byte sector, byte block, byte[] data) {
+		return write(sector2BlockAddress(sector, block), data);
 	}
 
-	//导出1K字节,64个扇区
-	public byte[] DumpClassic1K(byte[] key, byte[] uid) {
+	public byte[] dumpClassic1K(byte[] key, byte[] uid) {
 		int i, status;
 		byte[] data = new byte[1024];
 		byte[] buff = new byte[16];
 
 		for (i = 0; i < 64; i++) {
-			status = Auth_Card(PICC_AUTHENT1A, (byte) i, key, uid);
+			status = authCard(PICC_AUTHENT1A, (byte) i, key, uid);
 			if (status == MI_OK) {
-				status = Read((byte) i, buff);
+				status = read((byte) i, buff);
 				if (status == MI_OK)
 					System.arraycopy(buff, 0, data, i * 64, 16);
 			}
 		}
+
 		return data;
 	}
 
@@ -432,22 +417,22 @@ public class RC522Communicator {
 	//sector-0~15
 	//block-0~3
 	//return blockaddress
-	private byte Sector2BlockAddress(byte sector, byte block) {
+	private byte sector2BlockAddress(byte sector, byte block) {
 		if (sector < 0 || sector > 15 || block < 0 || block > 3) return (byte) (-1);
 		return (byte) (sector * 4 + block);
 	}
 
 	//uid-5 bytes
-	public int Select_MirareOne(byte[] uid) {
+	public int selectMirareOne(byte[] uid) {
 		int[] back_bits = new int[1];
 		byte[] tagid = new byte[5];
 		int status;
 
-		status = Request(PICC_REQIDL, back_bits);
+		status = request(PICC_REQIDL, back_bits);
 		if (status != MI_OK) return status;
-		status = AntiColl(tagid);
+		status = antiColl(tagid);
 		if (status != MI_OK) return status;
-		Select_Tag(tagid);
+		selectTag(tagid);
 		System.arraycopy(tagid, 0, uid, 0, 5);
 
 		return status;
@@ -458,16 +443,16 @@ public class RC522Communicator {
 		byte[] tagid = new byte[5];
 		RequestResult status;
 
-		status = Request(PICC_REQIDL);
+		status = request(PICC_REQIDL);
 		if (!status.isSuccess()) {
 			return new ReadResult(status);
 		}
-		status = AntiColl();
+		status = antiColl();
 		if (!status.isSuccess()) {
 			return new ReadResult(status);
 		}
 
-		Select_Tag(status.getResponseData());
+		selectTag(status.getResponseData());
 
 		return new ReadResult(status);
 	}

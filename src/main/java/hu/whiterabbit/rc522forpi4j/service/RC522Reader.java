@@ -13,7 +13,7 @@ public class RC522Reader {
 	public String readTag() {
 		byte[] tagId = new byte[5];
 
-		int readStatus = rc522.Select_MirareOne(tagId);
+		int readStatus = rc522.selectMirareOne(tagId);
 
 		if (readStatus == 2) {
 			return "";
@@ -37,7 +37,7 @@ public class RC522Reader {
 	public void read() throws InterruptedException {
 		byte[] tagId = new byte[5];
 
-		int readStatus = rc522.Select_MirareOne(tagId);
+		int readStatus = rc522.selectMirareOne(tagId);
 		if (readStatus == 2) {
 			return;
 		}
@@ -121,7 +121,7 @@ public class RC522Reader {
 	public void read2() throws InterruptedException {
 		byte[] tagid = new byte[5];
 
-		int readStatus = rc522.Select_MirareOne(tagid);
+		int readStatus = rc522.selectMirareOne(tagid);
 		if (readStatus == 2) {
 			return;
 		}
@@ -178,7 +178,7 @@ public class RC522Reader {
 		System.out.println("Authenticate A");
 
 		byte[] keyA = new byte[] { (byte) 0x03, (byte) 0x03, (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
-		int status = rc522.Auth_Card(RC522Communicator.PICC_AUTHENT1A, sector, block, keyA, tagId);
+		int status = rc522.authCard(RC522Communicator.PICC_AUTHENT1A, sector, block, keyA, tagId);
 
 		if (status != RC522Communicator.MI_OK) {
 			System.out.println("Authentication error");
@@ -193,7 +193,7 @@ public class RC522Reader {
 		System.out.println("Authenticate...");
 
 		byte[] keyB = new byte[] { (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF };
-		int status = rc522.Auth_Card(RC522Communicator.PICC_AUTHENT1A, sector, block, keyB, tagId);
+		int status = rc522.authCard(RC522Communicator.PICC_AUTHENT1A, sector, block, keyB, tagId);
 
 		if (status != RC522Communicator.MI_OK) {
 			System.out.println("Authentication error");
@@ -210,7 +210,7 @@ public class RC522Reader {
 		for (int i = 0; i < 16; i++) {
 			buff[i] = (byte) 0;
 		}
-		int status = rc522.Read(sector, block, buff);
+		int status = rc522.read(sector, block, buff);
 
 		System.out.print("sector = " + sector + ", block = " + block + ": ");
 
