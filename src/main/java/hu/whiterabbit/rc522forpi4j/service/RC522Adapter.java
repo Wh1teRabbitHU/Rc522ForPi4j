@@ -11,9 +11,9 @@ import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.*;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.getStatus;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
-public class RC522Communicator {
+public class RC522Adapter {
 
-	private static final Logger logger = LoggerFactory.getLogger(RC522Communicator.class);
+	private static final Logger logger = LoggerFactory.getLogger(RC522Adapter.class);
 
 	private final int resetPin;        //RST Pin number,default 22
 
@@ -23,14 +23,14 @@ public class RC522Communicator {
 
 	private static final int MAX_LEN = 16; //扇区字节数
 
-	public RC522Communicator() {
+	public RC522Adapter() {
 		this.resetPin = 22;
 		this.speed = 500000;
 
 		init();
 	}
 
-	public RC522Communicator(int speed, int resetPin) {
+	public RC522Adapter(int speed, int resetPin) {
 		this.resetPin = resetPin;
 		this.speed = speed;
 

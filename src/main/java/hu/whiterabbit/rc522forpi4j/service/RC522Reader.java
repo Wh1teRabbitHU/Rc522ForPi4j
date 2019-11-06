@@ -11,7 +11,7 @@ import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class RC522Reader {
 
-	private static final RC522Communicator rc522 = new RC522Communicator();
+	private static final RC522Adapter rc522 = new RC522Adapter();
 
 	public String readTag() {
 		byte[] tagId = new byte[5];
