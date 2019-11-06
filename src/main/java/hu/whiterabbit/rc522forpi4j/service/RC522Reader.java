@@ -2,8 +2,11 @@ package hu.whiterabbit.rc522forpi4j.service;
 
 import com.pi4j.wiringpi.Spi;
 import hu.whiterabbit.rc522forpi4j.model.ReadResult;
+
 import java.nio.charset.StandardCharsets;
 
+import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.MI_OK;
+import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.PICC_AUTHENT1A;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class RC522Reader {
@@ -62,7 +65,7 @@ public class RC522Reader {
 		byte[] keyA = new byte[] { (byte) 0x03, (byte) 0x03, (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
 		byte[] keyB = new byte[] { (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF };
 
-		//Authenticate,A密钥验证卡,可以读数据块2
+		//Authenticate
 		byte data[] = new byte[16];
 		status = rc522.Auth_Card(RC522Reader.PICC_AUTHENT1A, sector, block, keyA, tagid);
 		if (status != RC522Reader.MI_OK) {
@@ -81,7 +84,7 @@ public class RC522Reader {
 			data[i] = (byte) 0x00;
 		}
 
-		//Authenticate,B密钥验证卡,可以写数据块2
+		//Authenticate
 		status = rc522.Auth_Card(RC522Reader.PICC_AUTHENT1B, sector, block, keyB, tagid);
 		if (status != RC522Reader.MI_OK) {
 			System.out.println("Authenticate B error");
@@ -177,10 +180,10 @@ public class RC522Reader {
 	private String authAAndReadData(byte sector, byte block, byte[] tagId) {
 		System.out.println("Authenticate A");
 
-		byte[] keyA = new byte[] { (byte) 0x03, (byte) 0x03, (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
-		int status = rc522.authCard(RC522Communicator.PICC_AUTHENT1A, sector, block, keyA, tagId);
+		byte[] keyA = new byte[]{(byte) 0x03, (byte) 0x03, (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03};
+		int status = rc522.authCard(PICC_AUTHENT1A, sector, block, keyA, tagId);
 
-		if (status != RC522Communicator.MI_OK) {
+		if (status != MI_OK) {
 			System.out.println("Authentication error");
 
 			return "";
@@ -192,10 +195,10 @@ public class RC522Reader {
 	private String authAndReadData(byte sector, byte block, byte[] tagId) {
 		System.out.println("Authenticate...");
 
-		byte[] keyB = new byte[] { (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF };
-		int status = rc522.authCard(RC522Communicator.PICC_AUTHENT1A, sector, block, keyB, tagId);
+		byte[] keyB = new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
+		int status = rc522.authCard(PICC_AUTHENT1A, sector, block, keyB, tagId);
 
-		if (status != RC522Communicator.MI_OK) {
+		if (status != MI_OK) {
 			System.out.println("Authentication error");
 
 			return "";
@@ -214,7 +217,7 @@ public class RC522Reader {
 
 		System.out.print("sector = " + sector + ", block = " + block + ": ");
 
-		if (status != RC522Communicator.MI_OK) {
+		if (status != MI_OK) {
 			System.out.println("");
 			return "";
 		}
