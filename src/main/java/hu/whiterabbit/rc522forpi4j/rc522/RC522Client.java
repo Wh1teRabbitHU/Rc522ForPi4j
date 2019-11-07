@@ -11,7 +11,13 @@ import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class RC522Client {
 
-	private static final RC522Adapter rc522 = new RC522Adapter();
+	private static final int RESET_PIN = 22;
+
+	private static final int SPEED = 500000;
+
+	private static final int SPI_CHANNEL = 0;
+
+	private static final RC522Adapter rc522 = new RC522Adapter(SPEED, RESET_PIN, SPI_CHANNEL);
 
 	public String readTag() {
 		byte[] tagId = new byte[5];
