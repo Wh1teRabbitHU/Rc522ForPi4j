@@ -27,7 +27,8 @@ public class ReadData {
 
 				Thread.sleep(10);
 			}
-		} catch (InterruptedException ignored) {
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage(), e);
 		}
 	}
 

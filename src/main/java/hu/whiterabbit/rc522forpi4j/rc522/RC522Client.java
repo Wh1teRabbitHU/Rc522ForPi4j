@@ -54,6 +54,8 @@ public class RC522Client {
 
 		Thread.sleep(3000);
 
+		System.out.println("sleep ended");
+
 
 		/*
 		//default key
@@ -212,7 +214,7 @@ public class RC522Client {
 			return "";
 		}
 
-		String strData = new String(result.getData(), StandardCharsets.UTF_8);
+		String strData = new String(result.getData(), StandardCharsets.ISO_8859_1);
 
 		System.out.println(strData);
 
