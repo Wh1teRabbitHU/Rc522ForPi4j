@@ -1,4 +1,4 @@
-package hu.whiterabbit.rc522forpi4j.service;
+package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Gpio;
 import com.pi4j.wiringpi.Spi;
@@ -7,7 +7,7 @@ import hu.whiterabbit.rc522forpi4j.model.RequestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.*;
+import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.*;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.getStatus;
 
 @SuppressWarnings({"unused", "WeakerAccess"})

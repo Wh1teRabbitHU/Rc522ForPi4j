@@ -1,15 +1,15 @@
-package hu.whiterabbit.rc522forpi4j.service;
+package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Spi;
 import hu.whiterabbit.rc522forpi4j.model.ReadResult;
 
 import java.nio.charset.StandardCharsets;
 
-import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.MI_OK;
-import static hu.whiterabbit.rc522forpi4j.util.CommandUtil.PICC_AUTHENT1A;
+import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.MI_OK;
+import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.PICC_AUTHENT1A;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
-public class RC522Reader {
+public class RC522Client {
 
 	private static final RC522Adapter rc522 = new RC522Adapter();
 

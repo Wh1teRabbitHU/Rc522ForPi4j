@@ -1,6 +1,6 @@
 package hu.whiterabbit.rc522forpi4j.example;
 
-import hu.whiterabbit.rc522forpi4j.service.RC522Reader;
+import hu.whiterabbit.rc522forpi4j.rc522.RC522Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,13 +9,13 @@ public class ReadData {
 	private static final Logger logger = LoggerFactory.getLogger(ReadData.class);
 
 	public static void main(String[] args) {
-		final RC522Reader rc522Reader = new RC522Reader();
+		final RC522Client rc522Client = new RC522Client();
 
 		logger.info("Starting to read data");
 
 		try {
 			while (true) {
-				String tag = rc522Reader.readTag();
+				String tag = rc522Client.readTag();
 
 				if (tag.equals("")) {
 					continue;
@@ -23,7 +23,7 @@ public class ReadData {
 
 				logger.info("Tag: {}", tag);
 
-				rc522Reader.read();
+				rc522Client.read();
 
 				Thread.sleep(10);
 			}
