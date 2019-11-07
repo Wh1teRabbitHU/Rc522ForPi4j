@@ -2,8 +2,9 @@ package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Gpio;
 import com.pi4j.wiringpi.Spi;
+import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
 import hu.whiterabbit.rc522forpi4j.model.ReadResult;
-import hu.whiterabbit.rc522forpi4j.model.RequestResult;
+import hu.whiterabbit.rc522forpi4j.model.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,11 +119,16 @@ public class RC522Adapter {
 		clearBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
-	private int writeCard(byte command, byte[] data, int dataLen, byte[] backData, int[] backBits, int[] backLen) {
+	private WriteResult writeCard(byte command, byte[] data) {
+		WriteResult writeResult = new WriteResult();
 		byte irq, irq_wait, lastBits;
 		int n, i;
 
-		backLen[0] = 0;
+		writeResult.setBackData(new byte[16]);
+		writeResult.setBackLen(0);
+
+		int dataLen = data.length;
+
 		if (command == PCD_AUTHENT) {
 			irq = 0x12;
 			irq_wait = 0x10;
@@ -156,7 +162,9 @@ public class RC522Adapter {
 		clearBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		if (i == 0) {
-			return MI_ERR;
+			writeResult.setStatus(CommunicationStatus.ERROR);
+
+			return writeResult;
 		}
 
 		if ((readRC522(ERROR_REG) & 0x1B) == 0x00) {
@@ -171,9 +179,9 @@ public class RC522Adapter {
 				lastBits = (byte) (readRC522(CONTROL_REG) & 0x07);
 
 				if (lastBits != 0) {
-					backBits[0] = (n - 1) * 8 + lastBits;
+					writeResult.setBackBits((n - 1) * 8 + lastBits);
 				} else {
-					backBits[0] = n * 8;
+					writeResult.setBackBits(n * 8);
 				}
 
 				if (n == 0) {
@@ -182,119 +190,68 @@ public class RC522Adapter {
 					n = MAX_LEN;
 				}
 
-				backLen[0] = n;
+				writeResult.setBackLen(n);
 
 				for (i = 0; i < n; i++) {
-					backData[i] = readRC522(FIFO_DATA_REG);
+					writeResult.getBackData()[i] = readRC522(FIFO_DATA_REG);
 				}
 			}
 
-			return status;
+			writeResult.setStatus(getStatus(status));
+
+			return writeResult;
 		}
 
-		return MI_ERR;
+		writeResult.setStatus(CommunicationStatus.ERROR);
+
+		return writeResult;
 	}
 
-	public int request(byte reqMode, int[] backBits) {
+	public WriteResult request(byte reqMode) {
 		byte[] tagType = new byte[1];
-		byte[] dataBack = new byte[16];
-		int[] backLen = new int[1];
-
-		writeRC522(BIT_FRAMING_REG, (byte) 0x07);
-
-		tagType[0] = reqMode;
-		backBits[0] = 0;
-
-		int status = writeCard(PCD_TRANSCEIVE, tagType, 1, dataBack, backBits, backLen);
-
-		if (status != MI_OK || backBits[0] != 0x10) {
-			status = MI_ERR;
-		}
-
-		return status;
-	}
-
-	public RequestResult request(byte reqMode) {
-		byte[] tagType = new byte[1];
-		byte[] dataBack = new byte[16];
-		int[] backBits = new int[1];
-		int[] backLen = new int[1];
 
 		writeRC522(BIT_FRAMING_REG, (byte) 0x07);
 
 		tagType[0] = reqMode;
 
-		int status = writeCard(PCD_TRANSCEIVE, tagType, 1, dataBack, backBits, backLen);
+		WriteResult writeResult = writeCard(PCD_TRANSCEIVE, tagType);
 
-		if (status != MI_OK || backBits[0] != 0x10) {
-			status = MI_ERR;
+		if (!writeResult.isSuccess() || writeResult.getBackBits() != 0x10) {
+			writeResult.setStatus(CommunicationStatus.ERROR);
 		}
 
-		return new RequestResult(getStatus(status));
+		return writeResult;
 	}
 
 	//Anti-collision detection.
 	//Returns tuple of (error state, tag ID).
-	public int antiColl(byte[] backData) {
+	public WriteResult antiColl() {
 		byte[] serialNumber = new byte[2];
 		int serialNumberCheck = 0;
-		int[] backLen = new int[1];
-		int[] backBits = new int[1];
 
 		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
-
 		serialNumber[0] = PICC_ANTICOLL;
 		serialNumber[1] = 0x20;
 
-		int status = writeCard(PCD_TRANSCEIVE, serialNumber, 2, backData, backBits, backLen);
+		WriteResult writeResult = writeCard(PCD_TRANSCEIVE, serialNumber);
 
-		if (status == MI_OK) {
-			if (backLen[0] == 5) {
+		if (writeResult.isSuccess()) {
+			if (writeResult.getBackLen() == 5) {
 				for (int i = 0; i < 4; i++) {
-					serialNumberCheck ^= backData[i];
+					serialNumberCheck ^= writeResult.getBackData()[i];
 				}
 
-				if (serialNumberCheck != backData[4]) {
+				if (serialNumberCheck != writeResult.getBackData()[4]) {
 					logger.error("check error");
 
-					status = MI_ERR;
+					writeResult.setStatus(CommunicationStatus.ERROR);
 				}
 			} else {
-				logger.error("backLen[0]=" + backLen[0]);
+				logger.error("backLen=" + writeResult.getBackLen());
 			}
 		}
 
-		return status;
-	}
-
-	public RequestResult antiColl() {
-		byte[] serialNumber = new byte[2];
-		int serialNumberCheck = 0;
-		int[] backLen = new int[1];
-		int[] backBits = new int[1];
-		byte[] tagData = new byte[5];
-
-		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
-		serialNumber[0] = PICC_ANTICOLL;
-		serialNumber[1] = 0x20;
-
-		int status = writeCard(PCD_TRANSCEIVE, serialNumber, 2, tagData, backBits, backLen);
-		if (status == MI_OK) {
-			if (backLen[0] == 5) {
-				for (int i = 0; i < 4; i++) {
-					serialNumberCheck ^= tagData[i];
-				}
-
-				if (serialNumberCheck != tagData[4]) {
-					status = MI_ERR;
-					System.out.println("check error");
-				}
-			} else {
-				System.out.println("backLen[0]=" + backLen[0]);
-			}
-		}
-
-		return new RequestResult(getStatus(status), tagData);
+		return writeResult;
 	}
 
 	private void calculateCRC(byte[] data) {
@@ -321,9 +278,6 @@ public class RC522Adapter {
 
 	public int selectTag(byte[] uid) {
 		byte[] data = new byte[9];
-		byte[] backData = new byte[MAX_LEN];
-		int[] backBits = new int[1];
-		int[] backLen = new int[1];
 
 		data[0] = PICC_SElECTTAG;
 		data[1] = 0x70;
@@ -334,9 +288,9 @@ public class RC522Adapter {
 
 		calculateCRC(data);
 
-		int status = writeCard(PCD_TRANSCEIVE, data, 9, backData, backBits, backLen);
-		if (status == MI_OK && backBits[0] == 0x18) {
-			return backData[0];
+		WriteResult writeResult = writeCard(PCD_TRANSCEIVE, data);
+		if (writeResult.isSuccess() && writeResult.getBackBits() == 0x18) {
+			return writeResult.getBackData()[0];
 		} else {
 			return 0;
 		}
@@ -347,11 +301,8 @@ public class RC522Adapter {
 	//block_address- used to authenticate
 	//key-list or tuple with six bytes key
 	//uid-list or tuple with four bytes tag ID
-	public int authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
+	public CommunicationStatus authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
 		byte[] data = new byte[12];
-		byte[] backData = new byte[MAX_LEN];
-		int[] backBits = new int[1];
-		int[] backLen = new int[1];
 
 		data[0] = authMode;
 		data[1] = blockAddress;
@@ -362,15 +313,15 @@ public class RC522Adapter {
 			data[j] = uid[i];
 		}
 
-		int status = writeCard(PCD_AUTHENT, data, 12, backData, backBits, backLen);
+		WriteResult writeResult = writeCard(PCD_AUTHENT, data);
 		if ((readRC522(STATUS_2_REG) & 0x08) == 0) {
-			return MI_ERR;
+			return CommunicationStatus.ERROR;
 		}
 
-		return status;
+		return writeResult.getStatus();
 	}
 
-	public int authCard(byte authMode, byte sector, byte block, byte[] key, byte[] uid) {
+	public CommunicationStatus authCard(byte authMode, byte sector, byte block, byte[] key, byte[] uid) {
 		return authCard(authMode, sector2BlockAddress(sector, block), key, uid);
 	}
 
@@ -379,78 +330,79 @@ public class RC522Adapter {
 		clearBitMask(STATUS_2_REG, (byte) 0x08);
 	}
 
+	public WriteResult read(byte sector, byte block) {
+		return read(sector2BlockAddress(sector, block));
+	}
+
 	//Reads data from block. You should be authenticated before calling read.
 	//Returns tuple of (result state, read data).
 	//block_address
 	//back_data-data to be read,16 bytes
-	public int read(byte blockAddress, byte[] back_data) {
+	public WriteResult read(byte blockAddress) {
 		byte[] data = new byte[4];
-		int[] backBits = new int[1];
-		int[] backLen = new int[1];
 
 		data[0] = PICC_READ;
 		data[1] = blockAddress;
 
 		calculateCRC(data);
 
-		int status = writeCard(PCD_TRANSCEIVE, data, data.length, back_data, backBits, backLen);
-		if (backLen[0] == 16) {
-			return MI_OK;
+		WriteResult writeResult = writeCard(PCD_TRANSCEIVE, data);
+
+		if (writeResult.getBackLen() == 16) {
+			writeResult.setStatus(CommunicationStatus.SUCCESS);
+
+			return writeResult;
 		}
 
-		return status;
-	}
-
-	public int read(byte sector, byte block, byte[] back_data) {
-		return read(sector2BlockAddress(sector, block), back_data);
+		return writeResult;
 	}
 
 	//Writes data to block. You should be authenticated before calling write.
 	//Returns error state.
 	//data-16 bytes
-	public int write(byte blockAddress, byte[] data) {
+	public WriteResult write(byte blockAddress, byte[] data) {
 		byte[] buff = new byte[4];
 		byte[] buffWrite = new byte[data.length + 2];
-		byte[] backData = new byte[MAX_LEN];
-		int[] backBits = new int[1];
-		int[] backLen = new int[1];
 
 		buff[0] = PICC_WRITE;
 		buff[1] = blockAddress;
 
 		calculateCRC(buff);
 
-		int status = writeCard(PCD_TRANSCEIVE, buff, buff.length, backData, backBits, backLen);
-		if (status != MI_OK || backBits[0] != 4 || (backData[0] & 0x0F) != 0x0A) {
-			return MI_ERR;
+		WriteResult writeResult = writeCard(PCD_TRANSCEIVE, buff);
+		if (!writeResult.isSuccess() || writeResult.getBackBits() != 4 || (writeResult.getBackData()[0] & 0x0F) != 0x0A) {
+			writeResult.setStatus(CommunicationStatus.ERROR);
+
+			return writeResult;
 		}
 
 		System.arraycopy(data, 0, buffWrite, 0, data.length);
 
 		calculateCRC(buffWrite);
 
-		status = writeCard(PCD_TRANSCEIVE, buffWrite, buffWrite.length, backData, backBits, backLen);
-		if (status != MI_OK || backBits[0] != 4 || (backData[0] & 0x0F) != 0x0A) {
-			return MI_ERR;
+		writeResult = writeCard(PCD_TRANSCEIVE, buffWrite);
+		if (!writeResult.isSuccess() || writeResult.getBackBits() != 4 || (writeResult.getBackData()[0] & 0x0F) != 0x0A) {
+			writeResult.setStatus(CommunicationStatus.ERROR);
+
+			return writeResult;
 		}
 
-		return status;
+		return writeResult;
 	}
 
-	public int write(byte sector, byte block, byte[] data) {
+	public WriteResult write(byte sector, byte block, byte[] data) {
 		return write(sector2BlockAddress(sector, block), data);
 	}
 
 	public byte[] dumpClassic1K(byte[] key, byte[] uid) {
 		byte[] data = new byte[1024];
-		byte[] buff = new byte[16];
 
 		for (int i = 0; i < 64; i++) {
-			int status = authCard(PICC_AUTHENT1A, (byte) i, key, uid);
-			if (status == MI_OK) {
-				status = read((byte) i, buff);
-				if (status == MI_OK) {
-					System.arraycopy(buff, 0, data, i * 64, 16);
+			CommunicationStatus status = authCard(PICC_AUTHENT1A, (byte) i, key, uid);
+			if (status == CommunicationStatus.SUCCESS) {
+				WriteResult result = read((byte) i);
+				if (result.isSuccess()) {
+					System.arraycopy(result.getBackData(), 0, data, i * 64, 16);
 				}
 			}
 		}
@@ -471,43 +423,40 @@ public class RC522Adapter {
 	}
 
 	//uid-5 bytes
-	public int selectMirareOne(byte[] uid) {
-		int[] backBits = new int[1];
-		byte[] tagId = new byte[5];
-
-		int status = request(PICC_REQIDL, backBits);
-		if (status != MI_OK) {
-			return status;
+	public CommunicationStatus selectMirareOne(byte[] uid) {
+		WriteResult writeResult = request(PICC_REQIDL);
+		if (!writeResult.isSuccess()) {
+			return writeResult.getStatus();
 		}
 
-		status = antiColl(tagId);
-		if (status != MI_OK) {
-			return status;
+		writeResult = antiColl();
+		if (!writeResult.isSuccess()) {
+			return writeResult.getStatus();
 		}
 
-		selectTag(tagId);
-		System.arraycopy(tagId, 0, uid, 0, 5);
+		selectTag(writeResult.getBackData());
+		System.arraycopy(writeResult.getBackData(), 0, uid, 0, 5);
 
-		return status;
+		return writeResult.getStatus();
 	}
 
 	public ReadResult tryToReadCardTag() {
 		int[] backBits = new int[1];
 		byte[] tagid = new byte[5];
 
-		RequestResult status = request(PICC_REQIDL);
-		if (!status.isSuccess()) {
-			return new ReadResult(status);
+		WriteResult writeResult = request(PICC_REQIDL);
+		if (!writeResult.isSuccess()) {
+			return new ReadResult(writeResult.getStatus());
 		}
 
-		status = antiColl();
+		WriteResult status = antiColl();
 		if (!status.isSuccess()) {
-			return new ReadResult(status);
+			return new ReadResult(status.getStatus());
 		}
 
-		selectTag(status.getResponseData());
+		selectTag(status.getBackData());
 
-		return new ReadResult(status);
+		return new ReadResult(status.getStatus());
 	}
 
 }

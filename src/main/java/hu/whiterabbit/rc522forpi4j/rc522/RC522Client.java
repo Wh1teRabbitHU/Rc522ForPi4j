@@ -1,11 +1,12 @@
 package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Spi;
+import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
 import hu.whiterabbit.rc522forpi4j.model.ReadResult;
+import hu.whiterabbit.rc522forpi4j.model.WriteResult;
 
 import java.nio.charset.StandardCharsets;
 
-import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.MI_OK;
 import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.PICC_AUTHENT1A;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
@@ -22,9 +23,9 @@ public class RC522Client {
 	public String readTag() {
 		byte[] tagId = new byte[5];
 
-		int readStatus = rc522.selectMirareOne(tagId);
+		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
 
-		if (readStatus == 2) {
+		if (readStatus == CommunicationStatus.ERROR) {
 			return "";
 		}
 
@@ -46,8 +47,8 @@ public class RC522Client {
 	public void read() throws InterruptedException {
 		byte[] tagId = new byte[5];
 
-		int readStatus = rc522.selectMirareOne(tagId);
-		if (readStatus == 2) {
+		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
+		if (readStatus == CommunicationStatus.ERROR) {
 			return;
 		}
 
@@ -130,8 +131,8 @@ public class RC522Client {
 	public void read2() throws InterruptedException {
 		byte[] tagid = new byte[5];
 
-		int readStatus = rc522.selectMirareOne(tagid);
-		if (readStatus == 2) {
+		CommunicationStatus readStatus = rc522.selectMirareOne(tagid);
+		if (readStatus == CommunicationStatus.ERROR) {
 			return;
 		}
 
@@ -187,9 +188,9 @@ public class RC522Client {
 		System.out.println("Authenticate A");
 
 		byte[] keyA = new byte[]{(byte) 0x03, (byte) 0x03, (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03};
-		int status = rc522.authCard(PICC_AUTHENT1A, sector, block, keyA, tagId);
+		CommunicationStatus status = rc522.authCard(PICC_AUTHENT1A, sector, block, keyA, tagId);
 
-		if (status != MI_OK) {
+		if (status != CommunicationStatus.SUCCESS) {
 			System.out.println("Authentication error");
 
 			return "";
@@ -202,9 +203,9 @@ public class RC522Client {
 		System.out.println("Authenticate...");
 
 		byte[] keyB = new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
-		int status = rc522.authCard(PICC_AUTHENT1A, sector, block, keyB, tagId);
+		CommunicationStatus status = rc522.authCard(PICC_AUTHENT1A, sector, block, keyB, tagId);
 
-		if (status != MI_OK) {
+		if (status != CommunicationStatus.SUCCESS) {
 			System.out.println("Authentication error");
 
 			return "";
@@ -214,21 +215,16 @@ public class RC522Client {
 	}
 
 	private String readData(byte sector, byte block) {
-		byte[] buff = new byte[16];
-
-		for (int i = 0; i < 16; i++) {
-			buff[i] = (byte) 0;
-		}
-		int status = rc522.read(sector, block, buff);
+		WriteResult writeResult = rc522.read(sector, block);
 
 		System.out.print("sector = " + sector + ", block = " + block + ": ");
 
-		if (status != MI_OK) {
+		if (!writeResult.isSuccess()) {
 			System.out.println("");
 			return "";
 		}
 
-		String strData = new String(buff, StandardCharsets.US_ASCII);
+		String strData = new String(writeResult.getBackData(), StandardCharsets.US_ASCII);
 
 		System.out.println(strData);
 
