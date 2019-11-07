@@ -23,7 +23,6 @@ public class RC522Client {
 		byte[] tagId = new byte[5];
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
-
 		if (readStatus == CommunicationStatus.ERROR) {
 			return "";
 		}
@@ -36,7 +35,6 @@ public class RC522Client {
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
 		if (readStatus == CommunicationStatus.ERROR) {
-			System.out.println("");
 			return;
 		}
 
@@ -52,9 +50,12 @@ public class RC522Client {
 
 		System.out.println("Read ended");
 
-		Thread.sleep(3000);
+		Thread.sleep(1000);
 
 		System.out.println("sleep ended");
+
+		rc522.reset();
+		Thread.sleep(50);
 
 
 		/*
@@ -118,62 +119,7 @@ public class RC522Client {
 		}*/
 	}
 
-	public void read2() throws InterruptedException {
-		byte[] tagid = new byte[5];
-
-		CommunicationStatus readStatus = rc522.selectMirareOne(tagid);
-		if (readStatus == CommunicationStatus.ERROR) {
-			return;
-		}
-
-		System.out.println("Card Read UID: " + bytesToHex(tagid));
-
-		Thread.sleep(2000);
-	}
-
-	public void loop() throws InterruptedException {
-		int count = 0;
-		while (count++ < 3) {
-
-			int packetlength = 5;
-
-			byte packet[] = new byte[packetlength];
-			packet[0] = (byte) 0x80; // FIRST PACKET GETS IGNORED BUT HAS TO BE SET TO READ
-			packet[1] = (byte) 0x80; // ADDRESS 0 Gives data of Address 0
-			packet[2] = (byte) 0x82; // ADDRESS 1 Gives data of Address 1
-			packet[3] = (byte) 0x84; // ADDRESS 2 Gives data of Address 2
-			packet[4] = (byte) 0x86; // ADDRESS 3 Gives data of Address 3
-
-			System.out.println("-----------------------------------------------");
-			System.out.println("Data to be transmitted:");
-			System.out.println("[TX] " + bytesToHex(packet));
-			System.out.println("[TX1] " + packet[1]);
-			System.out.println("[TX2] " + packet[2]);
-			System.out.println("[TX3] " + packet[3]);
-			System.out.println("[TX4] " + packet[4]);
-			System.out.println("Transmitting data...");
-
-			// Send data to Reader and receive answerpacket.
-			packet = readFromRFID(0, packet, packetlength);
-
-			System.out.println("Data transmitted, packets received.");
-			System.out.println("Received Packets (First packet to be ignored!)");
-			System.out.println("[RX] " + bytesToHex(packet));
-			System.out.println("[RX1] " + packet[1]);
-			System.out.println("[RX2] " + packet[2]);
-			System.out.println("[RX3] " + packet[3]);
-			System.out.println("[RX4] " + packet[4]);
-			System.out.println("-----------------------------------------------");
-
-			if (packet.length == 0) {
-				//Reset when no packet received
-				//ResetPin.high();
-				Thread.sleep(50);
-				//ResetPin.low();
-			}
-		}
-	}
-
+	/*
 	private String authAAndReadData(byte sector, byte block, byte[] tagId) {
 		System.out.println("Authenticate A");
 
@@ -188,6 +134,7 @@ public class RC522Client {
 
 		return readData(sector, block);
 	}
+	*/
 
 	private String authAndReadData(byte sector, byte block, byte[] tagId) {
 		System.out.println("Authenticate...");
@@ -219,24 +166,6 @@ public class RC522Client {
 		System.out.println(strData);
 
 		return strData;
-	}
-
-	private byte[] readFromRFID(int channel, byte[] packet, int length) {
-		Spi.wiringPiSPIDataRW(channel, packet, length);
-
-		return packet;
-	}
-
-	private boolean writeToRFID(int channel, byte fullAddress, byte data) {
-
-		byte[] packet = new byte[2];
-		packet[0] = fullAddress;
-		packet[1] = data;
-
-		if (Spi.wiringPiSPIDataRW(channel, packet, 1) >= 0)
-			return true;
-		else
-			return false;
 	}
 
 }

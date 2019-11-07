@@ -2,8 +2,8 @@ package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Gpio;
 import com.pi4j.wiringpi.Spi;
-import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
 import hu.whiterabbit.rc522forpi4j.model.CommunicationResult;
+import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,10 +53,14 @@ public class RC522Adapter {
 			return;
 		}
 
+		reset();
+	}
+
+	public void reset() {
 		Gpio.pinMode(resetPin, Gpio.OUTPUT);
 		Gpio.digitalWrite(resetPin, Gpio.HIGH);
-		reset();
 
+		writeRC522(COMMAND_REG, PCD_RESETPHASE);
 		writeRC522(T_MODE_REG, (byte) 0x8D);
 		writeRC522(T_PRESCALER_REG, (byte) 0x3E);
 		writeRC522(T_RELOAD_REG_L, (byte) 30);
@@ -65,10 +69,6 @@ public class RC522Adapter {
 		writeRC522(MODE_REG, (byte) 0x3D);
 
 		antennaOn();
-	}
-
-	private void reset() {
-		writeRC522(COMMAND_REG, PCD_RESETPHASE);
 	}
 
 	private void writeRC522(byte address, byte value) {
@@ -436,7 +436,8 @@ public class RC522Adapter {
 		selectTag(result.getData());
 		System.arraycopy(result.getData(), 0, uid, 0, 5);
 
-		return result.getStatus();
+
+		return CommunicationStatus.SUCCESS;
 	}
 
 	public CommunicationResult tryToReadCardTag() {

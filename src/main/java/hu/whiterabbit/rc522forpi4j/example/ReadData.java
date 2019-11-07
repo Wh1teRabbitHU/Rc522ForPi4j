@@ -15,6 +15,7 @@ public class ReadData {
 
 		try {
 			while (true) {
+				/*
 				String tag = rc522Client.readTag();
 
 				if (tag.equals("")) {
@@ -22,6 +23,9 @@ public class ReadData {
 				}
 
 				logger.info("Tag: {}", tag);
+
+				Thread.sleep(10);
+				*/
 
 				rc522Client.read();
 
