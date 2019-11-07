@@ -1,9 +1,8 @@
 package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Spi;
+import hu.whiterabbit.rc522forpi4j.model.CommunicationResult;
 import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
-import hu.whiterabbit.rc522forpi4j.model.ReadResult;
-import hu.whiterabbit.rc522forpi4j.model.WriteResult;
 
 import java.nio.charset.StandardCharsets;
 
@@ -32,23 +31,12 @@ public class RC522Client {
 		return bytesToHex(tagId);
 	}
 
-	public ReadResult readBlock(int block) {
-		return null;
-	}
-
-	public ReadResult readSector(int fromBlock, int toBlock) {
-		return null;
-	}
-
-	public ReadResult readAllData() {
-		return null;
-	}
-
 	public void read() throws InterruptedException {
 		byte[] tagId = new byte[5];
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
 		if (readStatus == CommunicationStatus.ERROR) {
+			System.out.println("");
 			return;
 		}
 
@@ -215,16 +203,16 @@ public class RC522Client {
 	}
 
 	private String readData(byte sector, byte block) {
-		WriteResult writeResult = rc522.read(sector, block);
+		CommunicationResult result = rc522.read(sector, block);
 
 		System.out.print("sector = " + sector + ", block = " + block + ": ");
 
-		if (!writeResult.isSuccess()) {
+		if (!result.isSuccess()) {
 			System.out.println("");
 			return "";
 		}
 
-		String strData = new String(writeResult.getBackData(), StandardCharsets.US_ASCII);
+		String strData = new String(result.getData(), StandardCharsets.UTF_8);
 
 		System.out.println(strData);
 
