@@ -6,11 +6,11 @@ public class DataBlock {
 
 	private final int blockAddress;
 
-	private final byte[] byteData;
+	private final byte[] data;
 
-	public DataBlock(int blockAddress, byte[] byteData) {
+	public DataBlock(int blockAddress, byte[] data) {
 		this.blockAddress = blockAddress;
-		this.byteData = byteData;
+		this.data = data;
 	}
 
 	public int getBlockAddress() {
@@ -18,10 +18,18 @@ public class DataBlock {
 	}
 
 	public byte[] getByteData() {
-		return byteData;
+		return data;
 	}
 
 	public String getStringData() {
-		return byteData == null ? null : new String(byteData, StandardCharsets.US_ASCII);
+		return data == null ? null : new String(data, StandardCharsets.US_ASCII);
+	}
+
+	@Override
+	public String toString() {
+		return "DataBlock{" +
+				"blockAddress=" + blockAddress +
+				", byteData=" + getStringData() +
+				'}';
 	}
 }

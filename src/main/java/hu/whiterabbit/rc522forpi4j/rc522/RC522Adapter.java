@@ -109,7 +109,7 @@ public class RC522Adapter {
 	}
 
 	private void antennaOn() {
-		byte value = readRC522(TX_CONTROL_REG);
+		readRC522(TX_CONTROL_REG);
 
 		setBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
@@ -118,15 +118,14 @@ public class RC522Adapter {
 		clearBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
-	private CommunicationResult writeCard(byte command, byte[] data) {
+	private CommunicationResult writeCard(byte command, byte[] sendingData) {
 		CommunicationResult result = new CommunicationResult();
 		byte irq, irq_wait, lastBits;
 		int n, i;
 
-		result.setData(new byte[16]);
 		result.setLength(0);
 
-		int dataLen = data.length;
+		int dataLen = sendingData.length;
 
 		if (command == PCD_AUTHENT) {
 			irq = 0x12;
@@ -146,7 +145,7 @@ public class RC522Adapter {
 		writeRC522(COMMAND_REG, PCD_IDLE);
 
 		for (i = 0; i < dataLen; i++)
-			writeRC522(FIFO_DATA_REG, data[i]);
+			writeRC522(FIFO_DATA_REG, sendingData[i]);
 
 		writeRC522(COMMAND_REG, command);
 		if (command == PCD_TRANSCEIVE)
@@ -192,7 +191,7 @@ public class RC522Adapter {
 				result.setLength(n);
 
 				for (i = 0; i < n; i++) {
-					result.getData()[i] = readRC522(FIFO_DATA_REG);
+					result.setDataByte(i, readRC522(FIFO_DATA_REG));
 				}
 			}
 
@@ -237,10 +236,10 @@ public class RC522Adapter {
 		if (result.isSuccess()) {
 			if (result.getLength() == 5) {
 				for (int i = 0; i < 4; i++) {
-					serialNumberCheck ^= result.getData()[i];
+					serialNumberCheck ^= result.getDataByte(i);
 				}
 
-				if (serialNumberCheck != result.getData()[4]) {
+				if (serialNumberCheck != result.getDataByte(4)) {
 					logger.error("check error");
 
 					result.setStatus(CommunicationStatus.ERROR);
@@ -275,7 +274,7 @@ public class RC522Adapter {
 		data[data.length - 1] = readRC522(CRC_RESULT_REG_M);
 	}
 
-	public int selectTag(byte[] uid) {
+	public boolean selectTag(byte[] uid) {
 		byte[] data = new byte[9];
 
 		data[0] = PICC_SElECTTAG;
@@ -288,11 +287,8 @@ public class RC522Adapter {
 		calculateCRC(data);
 
 		CommunicationResult result = writeCard(PCD_TRANSCEIVE, data);
-		if (result.isSuccess() && result.getBits() == 0x18) {
-			return result.getData()[0];
-		} else {
-			return 0;
-		}
+
+		return result.isSuccess() && result.getBits() == 0x18;
 	}
 
 	//Authenticates to use specified block address. Tag must be selected using select_tag(uid) before auth.
@@ -300,7 +296,7 @@ public class RC522Adapter {
 	//block_address- used to authenticate
 	//key-list or tuple with six bytes key
 	//uid-list or tuple with four bytes tag ID
-	public CommunicationStatus authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
+	public CommunicationResult authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
 		byte[] data = new byte[12];
 
 		data[0] = authMode;
@@ -313,24 +309,17 @@ public class RC522Adapter {
 		}
 
 		CommunicationResult result = writeCard(PCD_AUTHENT, data);
+
 		if ((readRC522(STATUS_2_REG) & 0x08) == 0) {
-			return CommunicationStatus.ERROR;
+			result.setStatus(CommunicationStatus.ERROR);
 		}
 
-		return result.getStatus();
-	}
-
-	public CommunicationStatus authCard(byte authMode, byte sector, byte block, byte[] key, byte[] uid) {
-		return authCard(authMode, sector2BlockAddress(sector, block), key, uid);
+		return result;
 	}
 
 	//Ends operations with Crypto1 usage.
 	public void stopCrypto() {
 		clearBitMask(STATUS_2_REG, (byte) 0x08);
-	}
-
-	public CommunicationResult read(byte sector, byte block) {
-		return read(sector2BlockAddress(sector, block));
 	}
 
 	//Reads data from block. You should be authenticated before calling read.
@@ -369,7 +358,7 @@ public class RC522Adapter {
 		calculateCRC(buff);
 
 		CommunicationResult result = writeCard(PCD_TRANSCEIVE, buff);
-		if (!result.isSuccess() || result.getBits() != 4 || (result.getData()[0] & 0x0F) != 0x0A) {
+		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
 			result.setStatus(CommunicationStatus.ERROR);
 
 			return result;
@@ -380,33 +369,13 @@ public class RC522Adapter {
 		calculateCRC(buffWrite);
 
 		result = writeCard(PCD_TRANSCEIVE, buffWrite);
-		if (!result.isSuccess() || result.getBits() != 4 || (result.getData()[0] & 0x0F) != 0x0A) {
+		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
 			result.setStatus(CommunicationStatus.ERROR);
 
 			return result;
 		}
 
 		return result;
-	}
-
-	public CommunicationResult write(byte sector, byte block, byte[] data) {
-		return write(sector2BlockAddress(sector, block), data);
-	}
-
-	public byte[] dumpClassic1K(byte[] key, byte[] uid) {
-		byte[] data = new byte[1024];
-
-		for (int i = 0; i < 64; i++) {
-			CommunicationStatus status = authCard(PICC_AUTHENT1A, (byte) i, key, uid);
-			if (status == CommunicationStatus.SUCCESS) {
-				CommunicationResult result = read((byte) i);
-				if (result.isSuccess()) {
-					System.arraycopy(result.getData(), 0, data, i * 64, 16);
-				}
-			}
-		}
-
-		return data;
 	}
 
 	//Convert sector  to blockaddress
@@ -436,27 +405,7 @@ public class RC522Adapter {
 		selectTag(result.getData());
 		System.arraycopy(result.getData(), 0, uid, 0, 5);
 
-
 		return CommunicationStatus.SUCCESS;
-	}
-
-	public CommunicationResult tryToReadCardTag() {
-		int[] backBits = new int[1];
-		byte[] tagid = new byte[5];
-
-		CommunicationResult result = request(PICC_REQIDL);
-		if (!result.isSuccess()) {
-			return result;
-		}
-
-		result = antiColl();
-		if (!result.isSuccess()) {
-			return result;
-		}
-
-		selectTag(result.getData());
-
-		return result;
 	}
 
 }

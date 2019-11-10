@@ -4,6 +4,8 @@ public class CommunicationResult {
 
 	private byte[] data = new byte[16];
 
+	private DataType dataType = DataType.DATA;
+
 	private int length = 0;
 
 	private int bits = 0;
@@ -14,8 +16,20 @@ public class CommunicationResult {
 		return data;
 	}
 
-	public void setData(byte[] data) {
-		this.data = data;
+	public byte getDataByte(int index) {
+		return data[index];
+	}
+
+	public void setDataByte(int index, byte value) {
+		data[index] = value;
+	}
+
+	public DataType getDataType() {
+		return dataType;
+	}
+
+	public void setDataType(DataType dataType) {
+		this.dataType = dataType;
 	}
 
 	public int getLength() {

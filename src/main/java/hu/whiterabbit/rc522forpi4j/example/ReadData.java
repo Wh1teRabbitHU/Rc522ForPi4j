@@ -1,5 +1,6 @@
 package hu.whiterabbit.rc522forpi4j.example;
 
+import hu.whiterabbit.rc522forpi4j.model.CardData;
 import hu.whiterabbit.rc522forpi4j.rc522.RC522Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,19 +16,11 @@ public class ReadData {
 
 		try {
 			while (true) {
-				/*
-				String tag = rc522Client.readTag();
+				CardData cardData = rc522Client.readCardData();
 
-				if (tag.equals("")) {
-					continue;
+				if (cardData != null) {
+					logger.info("Card data: {}", cardData);
 				}
-
-				logger.info("Tag: {}", tag);
-
-				Thread.sleep(10);
-				*/
-
-				rc522Client.read();
 
 				Thread.sleep(10);
 			}
