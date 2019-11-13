@@ -1,23 +1,46 @@
 package hu.whiterabbit.rc522forpi4j.util;
 
-import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BinaryOperator;
 
 public class DataUtil {
+
+	private static final char[] HEX_ARRAY = {
+			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+	};
 
 	private DataUtil() {
 	}
 
 	public static String bytesToHex(byte[] bytes) {
-		final char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8',
-				'9', 'A', 'B', 'C', 'D', 'E', 'F'};
-		char[] hexChars = new char[bytes.length * 2];
-		int v;
-		for (int j = 0; j < bytes.length; j++) {
-			v = bytes[j] & 0xFF;
-			hexChars[j * 2] = hexArray[v >>> 4];
-			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+		return bytesToHex(bytes, (a, b) -> a + b);
+	}
+
+	public static String bytesToHex(byte[] bytes, BinaryOperator<String> reduceAcc) {
+		return bytesToHexList(bytes)
+				.stream()
+				.reduce(reduceAcc)
+				.orElse("");
+	}
+
+	public static List<String> bytesToHexList(byte[] bytes) {
+		List<String> hexList = new ArrayList<>();
+
+		if (bytes == null) {
+			return hexList;
 		}
-		return new String(hexChars);
+
+		for (byte aByte : bytes) {
+			int v = aByte & 0xFF;
+			String hex = HEX_ARRAY[v >>> 4] + "" + HEX_ARRAY[v & 0x0F];
+
+			hexList.add(hex);
+		}
+
+		return hexList;
 	}
 
 	public static CommunicationStatus getStatus(int statusCode) {

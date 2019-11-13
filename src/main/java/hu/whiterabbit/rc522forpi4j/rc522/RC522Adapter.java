@@ -2,8 +2,8 @@ package hu.whiterabbit.rc522forpi4j.rc522;
 
 import com.pi4j.wiringpi.Gpio;
 import com.pi4j.wiringpi.Spi;
-import hu.whiterabbit.rc522forpi4j.model.CommunicationResult;
-import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

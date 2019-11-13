@@ -1,8 +1,9 @@
 package hu.whiterabbit.rc522forpi4j.rc522;
 
-import hu.whiterabbit.rc522forpi4j.model.CardData;
-import hu.whiterabbit.rc522forpi4j.model.CommunicationResult;
-import hu.whiterabbit.rc522forpi4j.model.CommunicationStatus;
+import hu.whiterabbit.rc522forpi4j.model.card.Card;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
+import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class RC522Client {
 
 	private static final RC522Adapter rc522 = new RC522Adapter(SPEED, RESET_PIN, SPI_CHANNEL);
 
-	public CardData readCardData() {
+	public Card readCardData() {
 		byte[] tagId = new byte[5];
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
@@ -31,21 +32,27 @@ public class RC522Client {
 			return null;
 		}
 
-		CardData cardData = new CardData(tagId);
+		Card card = new Card(tagId);
 
-		logger.info("Card Read UID: (HEX) {}", cardData.getTagIdAsString());
+		logger.info("Card Read UID: (HEX) {}", card.getTagIdAsString());
 
-		for (byte block = 0; block < 64; block++) {
-			CommunicationResult result = authenticate(block, tagId);
+		for (int sector = 0; sector < Card.MAX_CARD_SIZE; sector++) {
+			for (int block = 0; block < Sector.MAX_SECTOR_SIZE; block++) {
+				byte fullAddress = (byte) (sector * Sector.MAX_SECTOR_SIZE + block);
+				CommunicationResult result = authenticate(fullAddress, tagId);
+				byte[] data = null;
 
-			if (result.isSuccess()) {
-				cardData.addDataBlock(block, readData(block));
+				if (result.isSuccess()) {
+					data = readData(fullAddress);
+				}
+
+				card.addBlock(sector, block, data);
 			}
 		}
 
 		rc522.reset();
 
-		return cardData;
+		return card;
 	}
 
 	private CommunicationResult authenticate(byte blockAddress, byte[] tagId) {

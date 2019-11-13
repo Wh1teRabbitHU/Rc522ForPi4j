@@ -1,4 +1,4 @@
-package hu.whiterabbit.rc522forpi4j.model;
+package hu.whiterabbit.rc522forpi4j.model.communication;
 
 public class CommunicationResult {
 
