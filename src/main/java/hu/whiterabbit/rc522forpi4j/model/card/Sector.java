@@ -35,6 +35,24 @@ public class Sector {
 		return blockList;
 	}
 
+	public Block getSectorTrailerBlock() {
+		return blockList.stream()
+				.filter(block -> block.getNumber() == Block.SECTOR_TRAILER_BLOCK_INDEX)
+				.findFirst()
+				.orElse(null);
+	}
+
+	public Block getManufacturerBlock() {
+		if (number != Block.MANUFACTURER_SECTOR_INDEX) {
+			return null;
+		}
+
+		return blockList.stream()
+				.filter(block -> block.getNumber() == Block.MANUFACTURER_BLOCK_INDEX)
+				.findFirst()
+				.orElse(null);
+	}
+
 	public void addBlock(Block block) {
 		Block existingBlock = getBlock(block.getNumber());
 

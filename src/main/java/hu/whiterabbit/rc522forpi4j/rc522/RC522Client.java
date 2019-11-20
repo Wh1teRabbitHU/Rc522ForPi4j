@@ -1,9 +1,9 @@
 package hu.whiterabbit.rc522forpi4j.rc522;
 
 import hu.whiterabbit.rc522forpi4j.model.card.Card;
+import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
-import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +49,8 @@ public class RC522Client {
 				card.addBlock(sector, block, data);
 			}
 		}
+
+		card.recalculateAccessModes();
 
 		rc522.reset();
 

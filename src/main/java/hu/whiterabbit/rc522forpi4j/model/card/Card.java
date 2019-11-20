@@ -3,6 +3,7 @@ package hu.whiterabbit.rc522forpi4j.model.card;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hu.whiterabbit.rc522forpi4j.model.card.Sector.MAX_SECTOR_SIZE;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class Card {
@@ -62,6 +63,30 @@ public class Card {
 		}
 
 		sector.addBlock(new Block(sectorNumber, blockNumber, byteData));
+	}
+
+	public void recalculateAccessModes() {
+		for (int sectorIndex = 0; sectorIndex <= MAX_CARD_SIZE; sectorIndex++) {
+			Sector sector = getSector(sectorIndex);
+
+			if (sector == null) {
+				continue;
+			}
+
+			Block sectorTrailerBlock = sector.getSectorTrailerBlock();
+
+			if (sectorTrailerBlock == null) {
+				continue;
+			}
+
+			for (int blockIndex = 0; blockIndex < MAX_SECTOR_SIZE; blockIndex++) {
+				Block block = sector.getBlock(blockIndex);
+
+				if (block != null) {
+					block.updateAccessMode(sectorTrailerBlock);
+				}
+			}
+		}
 	}
 
 	@Override

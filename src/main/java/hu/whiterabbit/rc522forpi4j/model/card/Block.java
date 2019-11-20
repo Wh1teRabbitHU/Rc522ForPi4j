@@ -10,17 +10,19 @@ public class Block {
 
 	private static final int MAX_BLOCK_SIZE = 16;
 
-	private static final int SECTOR_TRAILER_BLOCK_INDEX = 3;
+	static final int SECTOR_TRAILER_BLOCK_INDEX = 3;
 
-	private static final int MANUFACTURER_BLOCK_INDEX = 0;
+	static final int MANUFACTURER_BLOCK_INDEX = 0;
 
-	private static final int MANUFACTURER_SECTOR_INDEX = 0;
+	static final int MANUFACTURER_SECTOR_INDEX = 0;
 
 	private final int number;
 
 	private final byte[] data;
 
 	private BlockType blockType;
+
+	private BlockAccessMode accessMode;
 
 	public Block(int sectorIndex, int blockIndex) {
 		this(sectorIndex, blockIndex, null);
@@ -81,6 +83,24 @@ public class Block {
 
 	public String getDataAsString() {
 		return data == null ? null : new String(data, StandardCharsets.US_ASCII);
+	}
+
+	public BlockType getBlockType() {
+		return blockType;
+	}
+
+	public void setBlockType(BlockType blockType) {
+		this.blockType = blockType;
+	}
+
+	public BlockAccessMode getAccessMode() {
+		return accessMode;
+	}
+
+	public void updateAccessMode(Block sectorTrailerBlock) {
+		BlockAccessMode blockAccessMode = new BlockAccessMode();
+
+		// TODO: Implement
 	}
 
 	@Override
