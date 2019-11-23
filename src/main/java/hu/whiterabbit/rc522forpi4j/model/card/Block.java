@@ -1,5 +1,6 @@
 package hu.whiterabbit.rc522forpi4j.model.card;
 
+import hu.whiterabbit.rc522forpi4j.util.CardUtil;
 import hu.whiterabbit.rc522forpi4j.util.DataUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -65,6 +66,16 @@ public class Block {
 		return data[byteIndex];
 	}
 
+	public byte[] getByteRange(int startingIndex, int number) {
+		byte[] result = new byte[number];
+
+		for (int i = 0; i < number; i++) {
+			result[i] = getByte(startingIndex + i);
+		}
+
+		return result;
+	}
+
 	public void setByte(int byteIndex, byte value) {
 		if (byteIndex < 0 || byteIndex >= MAX_BLOCK_SIZE) {
 			throw new RuntimeException("Given byte number is out of range! (" + byteIndex + ")");
@@ -98,9 +109,9 @@ public class Block {
 	}
 
 	public void updateAccessMode(Block sectorTrailerBlock) {
-		BlockAccessMode blockAccessMode = new BlockAccessMode();
+		byte[] accessBytes = sectorTrailerBlock.getByteRange(6, 3);
 
-		// TODO: Implement
+		this.accessMode = CardUtil.getBlockAccessMode(this, accessBytes);
 	}
 
 	@Override

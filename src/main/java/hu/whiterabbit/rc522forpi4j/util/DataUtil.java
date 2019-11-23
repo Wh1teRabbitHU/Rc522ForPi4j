@@ -55,4 +55,8 @@ public class DataUtil {
 		}
 	}
 
+	public static int getBitValue(byte target, int index) {
+		return (target >> index) & 1;
+	}
+
 }

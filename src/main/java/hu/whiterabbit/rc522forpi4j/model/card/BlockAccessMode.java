@@ -16,6 +16,10 @@ public class BlockAccessMode {
 		this.c1 = c1;
 	}
 
+	public void setC1(int c1) {
+		this.c1 = c1 == 1;
+	}
+
 	public boolean isC2() {
 		return c2;
 	}
@@ -24,11 +28,19 @@ public class BlockAccessMode {
 		this.c2 = c2;
 	}
 
+	public void setC2(int c2) {
+		this.c2 = c2 == 1;
+	}
+
 	public boolean isC3() {
 		return c3;
 	}
 
 	public void setC3(boolean c3) {
 		this.c3 = c3;
+	}
+
+	public void setC3(int c3) {
+		this.c3 = c3 == 1;
 	}
 }
