@@ -1,9 +1,8 @@
 package hu.whiterabbit.rc522forpi4j.rc522;
 
-import com.pi4j.wiringpi.Gpio;
-import com.pi4j.wiringpi.Spi;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
+import hu.whiterabbit.rc522forpi4j.raspberry.RaspberryPiAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,21 +14,17 @@ public class RC522Adapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(RC522Adapter.class);
 
+	private static final RaspberryPiAdapter RASPBERRY_PI_ADAPTER = new RaspberryPiAdapter();
+
 	private static final int MIN_SPEED = 500000;
 
 	private static final int MAX_SPEED = 32000000;
-
-	private final int resetPin;
-
-	private final int speed;
 
 	private final int spiChannel;
 
 	private static final int MAX_LEN = 16;
 
 	public RC522Adapter(int speed, int resetPin, int spiChannel) {
-		this.resetPin = resetPin;
-		this.speed = speed;
 		this.spiChannel = spiChannel;
 
 		if (speed < MIN_SPEED || speed > MAX_SPEED) {
@@ -38,28 +33,10 @@ public class RC522Adapter {
 			return;
 		}
 
-		init();
-	}
-
-	private void init() {
-		Gpio.wiringPiSetup();
-
-		int responseCode = Spi.wiringPiSPISetup(spiChannel, speed);
-		if (responseCode > -1) {
-			logger.info(" --> Successfully loaded SPI communication");
-		} else {
-			logger.error(" --> Failed to set up  SPI communication");
-
-			return;
-		}
-
-		reset();
+		RASPBERRY_PI_ADAPTER.initRaspberry(spiChannel, speed, resetPin);
 	}
 
 	public void reset() {
-		Gpio.pinMode(resetPin, Gpio.OUTPUT);
-		Gpio.digitalWrite(resetPin, Gpio.HIGH);
-
 		writeRC522(COMMAND_REG, PCD_RESETPHASE);
 		writeRC522(T_MODE_REG, (byte) 0x8D);
 		writeRC522(T_PRESCALER_REG, (byte) 0x3E);
@@ -77,7 +54,7 @@ public class RC522Adapter {
 		data[0] = (byte) ((address << 1) & 0x7E);
 		data[1] = value;
 
-		int responseCode = Spi.wiringPiSPIDataRW(spiChannel, data);
+		int responseCode = RASPBERRY_PI_ADAPTER.wiringPiSPIDataRW(spiChannel, data);
 		if (responseCode == -1) {
 			logger.error("Device SPI write error, address={}, value={}", address, value);
 		}
@@ -88,7 +65,7 @@ public class RC522Adapter {
 
 		data[0] = (byte) (((address << 1) & 0x7E) | 0x80);
 
-		int responseCode = Spi.wiringPiSPIDataRW(spiChannel, data);
+		int responseCode = RASPBERRY_PI_ADAPTER.wiringPiSPIDataRW(spiChannel, data);
 		if (responseCode == -1) {
 			logger.error("Device SPI read error, address={}", address);
 		}
