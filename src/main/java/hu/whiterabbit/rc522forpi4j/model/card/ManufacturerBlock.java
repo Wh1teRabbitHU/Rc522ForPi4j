@@ -8,9 +8,9 @@ import static java.lang.System.arraycopy;
 
 public class ManufacturerBlock implements Block {
 
-	static final int MANUFACTURER_BLOCK_INDEX = 0;
+	public static final int MANUFACTURER_BLOCK_INDEX = 0;
 
-	static final int MANUFACTURER_SECTOR_INDEX = 0;
+	public static final int MANUFACTURER_SECTOR_INDEX = 0;
 
 	private final byte[] uid;
 

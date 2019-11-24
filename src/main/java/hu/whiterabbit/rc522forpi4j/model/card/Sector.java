@@ -3,6 +3,10 @@ package hu.whiterabbit.rc522forpi4j.model.card;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_BLOCK_INDEX;
+import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_SECTOR_INDEX;
+import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_TRAILER_BLOCK_INDEX;
+
 public class Sector {
 
 	public static final int MAX_SECTOR_SIZE = 4;
@@ -64,6 +68,16 @@ public class Sector {
 		}
 
 		dataBlockList.add(dataBlock);
+	}
+
+	public void addBlock(int blockIndex, byte[] byteData) {
+		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
+			this.setSectorTrailerBlock(new SectorTrailerBlock(byteData));
+		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && this.index == MANUFACTURER_SECTOR_INDEX) {
+			this.setManufacturerBlock(new ManufacturerBlock(byteData));
+		} else {
+			this.addBlock(new DataBlock(blockIndex, byteData));
+		}
 	}
 
 	public void recalculateAccessModes() {

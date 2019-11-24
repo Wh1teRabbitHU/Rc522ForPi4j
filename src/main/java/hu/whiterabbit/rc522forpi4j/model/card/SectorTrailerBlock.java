@@ -7,7 +7,7 @@ import static java.lang.System.arraycopy;
 
 public class SectorTrailerBlock implements Block {
 
-	static final int SECTOR_TRAILER_BLOCK_INDEX = 3;
+	public static final int SECTOR_TRAILER_BLOCK_INDEX = 3;
 
 	private byte[] keyA;
 

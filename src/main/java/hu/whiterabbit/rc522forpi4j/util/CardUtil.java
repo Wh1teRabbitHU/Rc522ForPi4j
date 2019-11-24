@@ -1,9 +1,9 @@
 package hu.whiterabbit.rc522forpi4j.util;
 
 import hu.whiterabbit.rc522forpi4j.model.card.Block;
-import hu.whiterabbit.rc522forpi4j.model.card.DataBlock;
 import hu.whiterabbit.rc522forpi4j.model.card.BlockAccessMode;
 import hu.whiterabbit.rc522forpi4j.model.card.BlockType;
+import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 
 import static hu.whiterabbit.rc522forpi4j.util.AccessModeBit.*;
 
@@ -24,6 +24,10 @@ public class CardUtil {
 		int extraSpaceNeeded = maxBlockTypeLength - blockTypeLength;
 
 		return "[" + blockType + "]" + new String(new char[extraSpaceNeeded]).replace("\0", " ");
+	}
+
+	public static byte getFullAddress(int sectorIndex, int blockIndex) {
+		return (byte) (sectorIndex * Sector.MAX_SECTOR_SIZE + blockIndex);
 	}
 
 	public static BlockAccessMode getBlockAccessMode(Block dataBlock, byte[] accessBytes) {
