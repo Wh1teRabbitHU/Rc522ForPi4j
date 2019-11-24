@@ -1,23 +1,13 @@
 package hu.whiterabbit.rc522forpi4j.model.card;
 
-import hu.whiterabbit.rc522forpi4j.util.CardUtil;
-import hu.whiterabbit.rc522forpi4j.util.DataUtil;
-
 import java.nio.charset.StandardCharsets;
 
 import static hu.whiterabbit.rc522forpi4j.model.card.Sector.MAX_SECTOR_SIZE;
 import static hu.whiterabbit.rc522forpi4j.util.CardUtil.blockTypeToString;
+import static hu.whiterabbit.rc522forpi4j.util.CardUtil.getBlockAccessMode;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
-public class DataBlock {
-
-	static final int MAX_BLOCK_SIZE = 16;
-
-	static final int SECTOR_TRAILER_BLOCK_INDEX = 3;
-
-	static final int MANUFACTURER_BLOCK_INDEX = 0;
-
-	static final int MANUFACTURER_SECTOR_INDEX = 0;
+public class DataBlock implements Block {
 
 	private final int index;
 
@@ -27,19 +17,15 @@ public class DataBlock {
 
 	private BlockAccessMode accessMode;
 
-	public DataBlock(int sectorIndex, int blockIndex) {
-		this(sectorIndex, blockIndex, null);
-	}
-
-	public DataBlock(int sectorIndex, int blockIndex, byte[] data) {
-		if (blockIndex < 0 || blockIndex >= MAX_SECTOR_SIZE) {
-			throw new RuntimeException("Given block index is out of range! (" + blockIndex + ")");
+	public DataBlock(int index, byte[] data) {
+		if (index < 0 || index >= MAX_SECTOR_SIZE) {
+			throw new RuntimeException("Given block index is out of range! (" + index + ")");
 		} else if (data != null && data.length > MAX_BLOCK_SIZE) {
 			throw new RuntimeException("Given data array is too large! (" + data.length +
 					") It should be less than " + MAX_BLOCK_SIZE);
 		}
 
-		this.index = blockIndex;
+		this.index = index;
 
 		if (data == null) {
 			this.data = new byte[MAX_BLOCK_SIZE];
@@ -47,13 +33,7 @@ public class DataBlock {
 			this.data = data;
 		}
 
-		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
-			blockType = BlockType.SECTOR_TRAILER;
-		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && sectorIndex == MANUFACTURER_SECTOR_INDEX) {
-			blockType = BlockType.MANUFACTURER;
-		} else {
-			blockType = BlockType.DATA;
-		}
+		blockType = BlockType.DATA;
 	}
 
 	public int getIndex() {
@@ -66,14 +46,6 @@ public class DataBlock {
 		}
 
 		return data[byteIndex];
-	}
-
-	public byte[] getByteRange(int startingIndex, int number) {
-		if (startingIndex < 0 || startingIndex + number >= MAX_BLOCK_SIZE) {
-			throw new RuntimeException("Given byte number is out of range! (" + startingIndex + "-" + (startingIndex + number) + ")");
-		}
-
-		return DataUtil.getByteRange(this.data, startingIndex, number);
 	}
 
 	public void setByte(int byteIndex, byte value) {
@@ -109,13 +81,13 @@ public class DataBlock {
 	}
 
 	public void updateAccessMode(SectorTrailerBlock sectorTrailerBlock) {
-		this.accessMode = CardUtil.getBlockAccessMode(this, sectorTrailerBlock.getAccessBytes());
+		this.accessMode = getBlockAccessMode(this, sectorTrailerBlock.getAccessBytes());
 	}
 
 	@Override
 	public String toString() {
-		return "\tBlock (" + index + ") " + blockTypeToString(blockType) +
+		return "\tBlock (" + getIndex() + ") " + blockTypeToString(getBlockType()) +
 				"\t" + getDataAsHex() +
-				"\t" + getAccessMode().toString();
+				"\t\t" + getAccessMode().toString();
 	}
 }

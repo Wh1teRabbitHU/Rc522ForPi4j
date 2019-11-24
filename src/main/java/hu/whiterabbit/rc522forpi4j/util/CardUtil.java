@@ -1,5 +1,6 @@
 package hu.whiterabbit.rc522forpi4j.util;
 
+import hu.whiterabbit.rc522forpi4j.model.card.Block;
 import hu.whiterabbit.rc522forpi4j.model.card.DataBlock;
 import hu.whiterabbit.rc522forpi4j.model.card.BlockAccessMode;
 import hu.whiterabbit.rc522forpi4j.model.card.BlockType;
@@ -25,7 +26,7 @@ public class CardUtil {
 		return "[" + blockType + "]" + new String(new char[extraSpaceNeeded]).replace("\0", " ");
 	}
 
-	public static BlockAccessMode getBlockAccessMode(DataBlock dataBlock, byte[] accessBytes) {
+	public static BlockAccessMode getBlockAccessMode(Block dataBlock, byte[] accessBytes) {
 		BlockAccessMode blockAccessMode = new BlockAccessMode();
 
 		int C1 = getAccessBit(accessBytes, dataBlock.getIndex(), 1, false);

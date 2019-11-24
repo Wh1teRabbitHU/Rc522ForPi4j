@@ -3,8 +3,9 @@ package hu.whiterabbit.rc522forpi4j.model.card;
 import java.util.ArrayList;
 import java.util.List;
 
-import static hu.whiterabbit.rc522forpi4j.model.card.DataBlock.*;
-import static hu.whiterabbit.rc522forpi4j.model.card.Sector.MAX_SECTOR_SIZE;
+import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_BLOCK_INDEX;
+import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_SECTOR_INDEX;
+import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_TRAILER_BLOCK_INDEX;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class Card {
@@ -68,7 +69,7 @@ public class Card {
 		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && sectorIndex == MANUFACTURER_SECTOR_INDEX) {
 			sector.setManufacturerBlock(new ManufacturerBlock(byteData));
 		} else {
-			sector.addBlock(new DataBlock(sectorIndex, blockIndex, byteData));
+			sector.addBlock(new DataBlock(blockIndex, byteData));
 		}
 	}
 
@@ -76,22 +77,8 @@ public class Card {
 		for (int sectorIndex = 0; sectorIndex < MAX_CARD_SIZE; sectorIndex++) {
 			Sector sector = getSector(sectorIndex);
 
-			if (sector == null) {
-				continue;
-			}
-
-			SectorTrailerBlock sectorTrailerBlock = sector.getSectorTrailerBlock();
-
-			if (sectorTrailerBlock == null) {
-				continue;
-			}
-
-			for (int blockIndex = 0; blockIndex < MAX_SECTOR_SIZE; blockIndex++) {
-				DataBlock dataBlock = sector.getBlock(blockIndex);
-
-				if (dataBlock != null) {
-					dataBlock.updateAccessMode(sectorTrailerBlock);
-				}
+			if (sector != null) {
+				sector.recalculateAccessModes();
 			}
 		}
 	}

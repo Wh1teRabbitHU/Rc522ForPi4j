@@ -66,6 +66,27 @@ public class Sector {
 		dataBlockList.add(dataBlock);
 	}
 
+	public void recalculateAccessModes() {
+		SectorTrailerBlock sectorTrailerBlock = this.getSectorTrailerBlock();
+
+		if (sectorTrailerBlock == null) {
+			return;
+		}
+
+		sectorTrailerBlock.updateAccessMode();
+
+		if (this.getManufacturerBlock() != null) {
+			this.getManufacturerBlock().updateAccessMode(sectorTrailerBlock);
+		}
+
+		for (int blockIndex = 0; blockIndex < MAX_SECTOR_SIZE; blockIndex++) {
+			DataBlock dataBlock = this.getBlock(blockIndex);
+
+			if (dataBlock != null) {
+				dataBlock.updateAccessMode(sectorTrailerBlock);
+			}
+		}
+	}
 
 	@Override
 	public String toString() {
