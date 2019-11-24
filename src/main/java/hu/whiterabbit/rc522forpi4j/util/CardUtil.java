@@ -47,7 +47,7 @@ public class CardUtil {
 			AccessModeBit bit = accessModeBits[i];
 
 			if (bit.blockIndex == blockIndex && bit.bitIndex == bitIndex && bit.isNegated == isNegated) {
-				return DataUtil.getBitValue(accessByte, i);
+				return DataUtil.getBitValue(accessByte, 7 - i);
 			}
 		}
 

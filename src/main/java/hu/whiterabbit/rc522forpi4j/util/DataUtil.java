@@ -15,6 +15,11 @@ public class DataUtil {
 	private DataUtil() {
 	}
 
+	public static String byteToHex(byte byteValue) {
+		int v = byteValue & 0xFF;
+		return HEX_ARRAY[v >>> 4] + "" + HEX_ARRAY[v & 0x0F];
+	}
+
 	public static String bytesToHex(byte[] bytes) {
 		return bytesToHex(bytes, (a, b) -> a + b);
 	}
@@ -34,10 +39,7 @@ public class DataUtil {
 		}
 
 		for (byte aByte : bytes) {
-			int v = aByte & 0xFF;
-			String hex = HEX_ARRAY[v >>> 4] + "" + HEX_ARRAY[v & 0x0F];
-
-			hexList.add(hex);
+			hexList.add(byteToHex(aByte));
 		}
 
 		return hexList;

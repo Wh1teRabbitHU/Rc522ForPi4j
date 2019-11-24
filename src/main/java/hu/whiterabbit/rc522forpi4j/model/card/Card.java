@@ -66,7 +66,7 @@ public class Card {
 	}
 
 	public void recalculateAccessModes() {
-		for (int sectorIndex = 0; sectorIndex <= MAX_CARD_SIZE; sectorIndex++) {
+		for (int sectorIndex = 0; sectorIndex < MAX_CARD_SIZE; sectorIndex++) {
 			Sector sector = getSector(sectorIndex);
 
 			if (sector == null) {

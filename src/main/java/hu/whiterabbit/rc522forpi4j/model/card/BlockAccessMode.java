@@ -43,4 +43,13 @@ public class BlockAccessMode {
 	public void setC3(int c3) {
 		this.c3 = c3 == 1;
 	}
+
+	@Override
+	public String toString() {
+		return "accessMode { " +
+				"c1=" + c1 +
+				", c2=" + c2 +
+				", c3=" + c3 +
+				" }";
+	}
 }

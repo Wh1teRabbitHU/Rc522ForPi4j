@@ -1,11 +1,11 @@
 package hu.whiterabbit.rc522forpi4j.model.card;
 
 import hu.whiterabbit.rc522forpi4j.util.CardUtil;
-import hu.whiterabbit.rc522forpi4j.util.DataUtil;
 
 import java.nio.charset.StandardCharsets;
 
 import static hu.whiterabbit.rc522forpi4j.model.card.Sector.MAX_SECTOR_SIZE;
+import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class Block {
 
@@ -89,7 +89,7 @@ public class Block {
 	}
 
 	public String getDataAsHex() {
-		return DataUtil.bytesToHex(data, (a, b) -> a + ", " + b);
+		return bytesToHex(data, (a, b) -> a + ", " + b);
 	}
 
 	public String getDataAsString() {
@@ -122,6 +122,6 @@ public class Block {
 
 		String blockPart = "[" + blockType + "]" + new String(new char[extraSpaceNeeded]).replace("\0", " ");
 
-		return "\tBlock (" + number + ") " + blockPart + "\t" + getDataAsHex();
+		return "\tBlock (" + number + ") " + blockPart + "\t" + getDataAsHex() + "\t" + getAccessMode().toString();
 	}
 }

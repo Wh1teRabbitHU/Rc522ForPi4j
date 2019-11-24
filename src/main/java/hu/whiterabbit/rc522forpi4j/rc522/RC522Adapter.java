@@ -34,6 +34,8 @@ public class RC522Adapter {
 		}
 
 		RASPBERRY_PI_ADAPTER.initRaspberry(spiChannel, speed, resetPin);
+
+		reset();
 	}
 
 	public void reset() {
