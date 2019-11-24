@@ -1,7 +1,8 @@
 package hu.whiterabbit.rc522forpi4j.util;
 
-import hu.whiterabbit.rc522forpi4j.model.card.Block;
+import hu.whiterabbit.rc522forpi4j.model.card.DataBlock;
 import hu.whiterabbit.rc522forpi4j.model.card.BlockAccessMode;
+import hu.whiterabbit.rc522forpi4j.model.card.BlockType;
 
 import static hu.whiterabbit.rc522forpi4j.util.AccessModeBit.*;
 
@@ -16,12 +17,20 @@ public class CardUtil {
 	private CardUtil() {
 	}
 
-	public static BlockAccessMode getBlockAccessMode(Block block, byte[] accessBytes) {
+	public static String blockTypeToString(BlockType blockType) {
+		int blockTypeLength = blockType.toString().length();
+		int maxBlockTypeLength = BlockType.SECTOR_TRAILER.toString().length();
+		int extraSpaceNeeded = maxBlockTypeLength - blockTypeLength;
+
+		return "[" + blockType + "]" + new String(new char[extraSpaceNeeded]).replace("\0", " ");
+	}
+
+	public static BlockAccessMode getBlockAccessMode(DataBlock dataBlock, byte[] accessBytes) {
 		BlockAccessMode blockAccessMode = new BlockAccessMode();
 
-		int C1 = getAccessBit(accessBytes, block.getNumber(), 1, false);
-		int C2 = getAccessBit(accessBytes, block.getNumber(), 2, false);
-		int C3 = getAccessBit(accessBytes, block.getNumber(), 3, false);
+		int C1 = getAccessBit(accessBytes, dataBlock.getIndex(), 1, false);
+		int C2 = getAccessBit(accessBytes, dataBlock.getIndex(), 2, false);
+		int C3 = getAccessBit(accessBytes, dataBlock.getIndex(), 3, false);
 
 		blockAccessMode.setC1(C1);
 		blockAccessMode.setC2(C2);

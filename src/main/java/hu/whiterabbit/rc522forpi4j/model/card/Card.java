@@ -3,6 +3,7 @@ package hu.whiterabbit.rc522forpi4j.model.card;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hu.whiterabbit.rc522forpi4j.model.card.DataBlock.*;
 import static hu.whiterabbit.rc522forpi4j.model.card.Sector.MAX_SECTOR_SIZE;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
@@ -33,7 +34,7 @@ public class Card {
 
 		return sectorList
 				.stream()
-				.filter(sector -> sector.getNumber() == sectorNumber)
+				.filter(sector -> sector.getIndex() == sectorNumber)
 				.findFirst()
 				.orElse(null);
 	}
@@ -43,26 +44,32 @@ public class Card {
 	}
 
 	public void addSector(Sector sector) {
-		Sector existingSector = getSector(sector.getNumber());
+		Sector existingSector = getSector(sector.getIndex());
 
 		if (existingSector != null) {
 			throw new RuntimeException("Cannot add the given sector to this card. " +
-					"Sector is already added with the following number: " + existingSector.getNumber());
+					"Sector is already added with the following number: " + existingSector.getIndex());
 		}
 
 		sectorList.add(sector);
 	}
 
-	public void addBlock(int sectorNumber, int blockNumber, byte[] byteData) {
-		Sector sector = getSector(sectorNumber);
+	public void addBlock(int sectorIndex, int blockIndex, byte[] byteData) {
+		Sector sector = getSector(sectorIndex);
 
 		if (sector == null) {
-			sector = new Sector(sectorNumber);
+			sector = new Sector(sectorIndex);
 
 			addSector(sector);
 		}
 
-		sector.addBlock(new Block(sectorNumber, blockNumber, byteData));
+		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
+			sector.setSectorTrailerBlock(new SectorTrailerBlock(byteData));
+		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && sectorIndex == MANUFACTURER_SECTOR_INDEX) {
+			sector.setManufacturerBlock(new ManufacturerBlock(byteData));
+		} else {
+			sector.addBlock(new DataBlock(sectorIndex, blockIndex, byteData));
+		}
 	}
 
 	public void recalculateAccessModes() {
@@ -73,17 +80,17 @@ public class Card {
 				continue;
 			}
 
-			Block sectorTrailerBlock = sector.getSectorTrailerBlock();
+			SectorTrailerBlock sectorTrailerBlock = sector.getSectorTrailerBlock();
 
 			if (sectorTrailerBlock == null) {
 				continue;
 			}
 
 			for (int blockIndex = 0; blockIndex < MAX_SECTOR_SIZE; blockIndex++) {
-				Block block = sector.getBlock(blockIndex);
+				DataBlock dataBlock = sector.getBlock(blockIndex);
 
-				if (block != null) {
-					block.updateAccessMode(sectorTrailerBlock);
+				if (dataBlock != null) {
+					dataBlock.updateAccessMode(sectorTrailerBlock);
 				}
 			}
 		}

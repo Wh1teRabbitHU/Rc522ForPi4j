@@ -61,4 +61,14 @@ public class DataUtil {
 		return (target >> index) & 1;
 	}
 
+	public static byte[] getByteRange(byte[] bytes, int startingIndex, int number) {
+		byte[] result = new byte[number];
+
+		for (int i = 0; i < number; i++) {
+			result[i] = bytes[startingIndex + i];
+		}
+
+		return result;
+	}
+
 }

@@ -7,70 +7,77 @@ public class Sector {
 
 	public static final int MAX_SECTOR_SIZE = 4;
 
-	private final int number;
+	private final int index;
 
-	private final List<Block> blockList = new ArrayList<>();
+	private SectorTrailerBlock sectorTrailerBlock;
 
-	public Sector(int number) {
-		this.number = number;
+	private ManufacturerBlock manufacturerBlock;
+
+	private final List<DataBlock> dataBlockList = new ArrayList<>();
+
+	public Sector(int index) {
+		this.index = index;
 	}
 
-	public int getNumber() {
-		return number;
+	public int getIndex() {
+		return index;
 	}
 
-	public Block getBlock(int blockNumber) {
+	public DataBlock getBlock(int blockNumber) {
 		if (blockNumber < 0 || blockNumber >= MAX_SECTOR_SIZE) {
 			throw new RuntimeException("Given block number is out of range! (" + blockNumber + ")");
 		}
 
-		return blockList
+		return dataBlockList
 				.stream()
-				.filter(block -> block.getNumber() == blockNumber)
+				.filter(dataBlock -> dataBlock.getIndex() == blockNumber)
 				.findFirst()
 				.orElse(null);
 	}
 
-	public List<Block> getBlockList() {
-		return blockList;
+	public List<DataBlock> getDataBlockList() {
+		return dataBlockList;
 	}
 
-	public Block getSectorTrailerBlock() {
-		return blockList.stream()
-				.filter(block -> block.getNumber() == Block.SECTOR_TRAILER_BLOCK_INDEX)
-				.findFirst()
-				.orElse(null);
+	public SectorTrailerBlock getSectorTrailerBlock() {
+		return sectorTrailerBlock;
 	}
 
-	public Block getManufacturerBlock() {
-		if (number != Block.MANUFACTURER_SECTOR_INDEX) {
-			return null;
-		}
-
-		return blockList.stream()
-				.filter(block -> block.getNumber() == Block.MANUFACTURER_BLOCK_INDEX)
-				.findFirst()
-				.orElse(null);
+	public void setSectorTrailerBlock(SectorTrailerBlock sectorTrailerBlock) {
+		this.sectorTrailerBlock = sectorTrailerBlock;
 	}
 
-	public void addBlock(Block block) {
-		Block existingBlock = getBlock(block.getNumber());
+	public ManufacturerBlock getManufacturerBlock() {
+		return manufacturerBlock;
+	}
 
-		if (existingBlock != null) {
+	public void setManufacturerBlock(ManufacturerBlock manufacturerBlock) {
+		this.manufacturerBlock = manufacturerBlock;
+	}
+
+	public void addBlock(DataBlock dataBlock) {
+		DataBlock existingDataBlock = getBlock(dataBlock.getIndex());
+
+		if (existingDataBlock != null) {
 			throw new RuntimeException("Cannot add the given block to this sector. " +
-					"Block is already added with this number: " + block.getNumber());
+					"Block is already added with this number: " + dataBlock.getIndex());
 		}
 
-		blockList.add(block);
+		dataBlockList.add(dataBlock);
 	}
+
 
 	@Override
 	public String toString() {
-		return "Sector (" + number +
-				")\n" + blockList
+		String sectorHeaderString = "Sector (" + index + ")\n";
+		String manufacturerBlockString = this.manufacturerBlock == null ? "" : this.manufacturerBlock.toString() + "\n";
+		String dataBlockString = this.dataBlockList
 				.stream()
-				.map(Block::toString)
+				.map(DataBlock::toString)
 				.reduce((a, b) -> a + "\n" + b)
-				.orElse("");
+				.orElse("") + "\n";
+		String sectorTrailerBlockString = this.sectorTrailerBlock.toString();
+
+		return sectorHeaderString + manufacturerBlockString + dataBlockString + sectorTrailerBlockString;
 	}
 }
