@@ -2,22 +2,22 @@ package hu.whiterabbit.rc522forpi4j.model.card;
 
 public class BlockAuthKey {
 
-	public static final byte[] FACTORY_DEFAULT_KEY = new byte[]{
+	private static final byte[] FACTORY_DEFAULT_KEY = new byte[]{
 			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
 	};
 
-	private int blockIndex;
+	private final int blockIndex;
 
 	private AuthKeyType keyType;
 
 	private byte[] key;
 
-	public int getBlockIndex() {
-		return blockIndex;
+	public BlockAuthKey(int blockIndex) {
+		this.blockIndex = blockIndex;
 	}
 
-	public void setBlockIndex(int blockIndex) {
-		this.blockIndex = blockIndex;
+	public int getBlockIndex() {
+		return blockIndex;
 	}
 
 	public AuthKeyType getKeyType() {
@@ -34,5 +34,14 @@ public class BlockAuthKey {
 
 	public void setKey(byte[] key) {
 		this.key = key;
+	}
+
+	public static BlockAuthKey getFactoryDefaultKey(int blockIndex) {
+		BlockAuthKey authKey = new BlockAuthKey(blockIndex);
+
+		authKey.setKeyType(AuthKeyType.AUTH_A);
+		authKey.setKey(FACTORY_DEFAULT_KEY);
+
+		return authKey;
 	}
 }

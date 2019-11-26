@@ -11,6 +11,7 @@ import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTU
 import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_SECTOR_INDEX;
 import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_TRAILER_BLOCK_INDEX;
 import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.PICC_AUTHENT1A;
+import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.PICC_AUTHENT1B;
 import static hu.whiterabbit.rc522forpi4j.util.CardUtil.getFullAddress;
 
 public class RC522ClientImpl implements RC522Client {
@@ -30,6 +31,11 @@ public class RC522ClientImpl implements RC522Client {
 
 	@Override
 	public Card readCardData() {
+		return readCardData(CardAuthKey.getFactoryDefaultKey());
+	}
+
+	@Override
+	public Card readCardData(CardAuthKey cardAuthKey) {
 		byte[] tagId = new byte[5];
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
@@ -43,7 +49,7 @@ public class RC522ClientImpl implements RC522Client {
 
 		for (int sectorIndex = 0; sectorIndex < Card.MAX_CARD_SIZE; sectorIndex++) {
 			for (int blockIndex = 0; blockIndex < Sector.MAX_SECTOR_SIZE; blockIndex++) {
-				byte[] data = authAndReadData(sectorIndex, blockIndex, tagId);
+				byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, cardAuthKey.getBlockAuthKey(sectorIndex, blockIndex));
 
 				card.addBlock(sectorIndex, blockIndex, data);
 			}
@@ -58,6 +64,11 @@ public class RC522ClientImpl implements RC522Client {
 
 	@Override
 	public Sector readSectorData(int sectorIndex) {
+		return readSectorData(sectorIndex, SectorAuthKey.getFactoryDefaultKey(sectorIndex));
+	}
+
+	@Override
+	public Sector readSectorData(int sectorIndex, SectorAuthKey sectorAuthKey) {
 		byte[] tagId = new byte[5];
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
@@ -70,7 +81,7 @@ public class RC522ClientImpl implements RC522Client {
 		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
 		for (int blockIndex = 0; blockIndex < Sector.MAX_SECTOR_SIZE; blockIndex++) {
-			byte[] data = authAndReadData(sectorIndex, blockIndex, tagId);
+			byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, sectorAuthKey.getBlockAuthKey(blockIndex));
 
 			sector.addBlock(blockIndex, data);
 		}
@@ -84,6 +95,11 @@ public class RC522ClientImpl implements RC522Client {
 
 	@Override
 	public Block readBlockData(int sectorIndex, int blockIndex) {
+		return readBlockData(sectorIndex, blockIndex, BlockAuthKey.getFactoryDefaultKey(blockIndex));
+	}
+
+	@Override
+	public Block readBlockData(int sectorIndex, int blockIndex, BlockAuthKey blockAuthKey) {
 		byte[] tagId = new byte[5];
 
 		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
@@ -94,7 +110,7 @@ public class RC522ClientImpl implements RC522Client {
 		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
 		Block block;
-		byte[] data = authAndReadData(sectorIndex, blockIndex, tagId);
+		byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, blockAuthKey);
 
 		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
 			block = new SectorTrailerBlock(data);
@@ -109,9 +125,9 @@ public class RC522ClientImpl implements RC522Client {
 		return block;
 	}
 
-	private byte[] authAndReadData(int sectorIndex, int blockIndex, byte[] tagId) {
+	private byte[] authAndReadData(int sectorIndex, int blockIndex, byte[] tagId, BlockAuthKey blockAuthKey) {
 		byte fullAddress = getFullAddress(sectorIndex, blockIndex);
-		CommunicationResult result = auth(fullAddress, tagId);
+		CommunicationResult result = auth(fullAddress, tagId, blockAuthKey);
 
 		if (result.isSuccess()) {
 			return readData(fullAddress);
@@ -120,10 +136,23 @@ public class RC522ClientImpl implements RC522Client {
 		return null;
 	}
 
-	private CommunicationResult auth(byte blockAddress, byte[] tagId) {
+	private CommunicationResult auth(byte blockAddress, byte[] tagId, BlockAuthKey blockAuthKey) {
 		logger.debug("Authenticate block: {}", blockAddress);
 
-		CommunicationResult result = rc522.authCard(PICC_AUTHENT1A, blockAddress, KEY_B, tagId);
+		byte authCommand;
+
+		switch (blockAuthKey.getKeyType()) {
+			case AUTH_A:
+				authCommand = PICC_AUTHENT1A;
+				break;
+			case AUTH_B:
+				authCommand = PICC_AUTHENT1B;
+				break;
+			default:
+				throw new RuntimeException("Error! Unknown authentication key type: " + blockAuthKey.getKeyType());
+		}
+
+		CommunicationResult result = rc522.authCard(authCommand, blockAddress, blockAuthKey.getKey(), tagId);
 
 		if (result.isSuccess()) {
 			logger.debug("Successfully authenticated!");
