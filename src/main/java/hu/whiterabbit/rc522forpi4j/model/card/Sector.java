@@ -17,7 +17,7 @@ public class Sector {
 
 	private ManufacturerBlock manufacturerBlock;
 
-	private final List<DataBlock> dataBlockList = new ArrayList<>();
+	private final List<DataBlock> dataBlocks = new ArrayList<>();
 
 	public Sector(int index) {
 		this.index = index;
@@ -32,15 +32,15 @@ public class Sector {
 			throw new RuntimeException("Given block number is out of range! (" + blockNumber + ")");
 		}
 
-		return dataBlockList
+		return dataBlocks
 				.stream()
 				.filter(dataBlock -> dataBlock.getIndex() == blockNumber)
 				.findFirst()
 				.orElse(null);
 	}
 
-	public List<DataBlock> getDataBlockList() {
-		return dataBlockList;
+	public List<DataBlock> getDataBlocks() {
+		return dataBlocks;
 	}
 
 	public SectorTrailerBlock getSectorTrailerBlock() {
@@ -67,7 +67,7 @@ public class Sector {
 					"Block is already added with this number: " + dataBlock.getIndex());
 		}
 
-		dataBlockList.add(dataBlock);
+		dataBlocks.add(dataBlock);
 	}
 
 	public void addBlock(int blockIndex, byte[] byteData) {
@@ -106,7 +106,7 @@ public class Sector {
 	public String toString() {
 		String sectorHeaderString = "Sector (" + index + ")\n";
 		String manufacturerBlockString = this.manufacturerBlock == null ? "" : this.manufacturerBlock.toString() + "\n";
-		String dataBlockString = this.dataBlockList
+		String dataBlockString = this.dataBlocks
 				.stream()
 				.map(DataBlock::toString)
 				.reduce((a, b) -> a + "\n" + b)

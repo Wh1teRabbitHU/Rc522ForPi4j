@@ -11,7 +11,7 @@ public class Card {
 
 	private final byte[] tagId;
 
-	private final List<Sector> sectorList = new ArrayList<>();
+	private final List<Sector> sectors = new ArrayList<>();
 
 	public Card(byte[] tagId) {
 		this.tagId = tagId;
@@ -30,15 +30,15 @@ public class Card {
 			throw new RuntimeException("Given sector number is out of range! (" + sectorNumber + ")");
 		}
 
-		return sectorList
+		return sectors
 				.stream()
 				.filter(sector -> sector.getIndex() == sectorNumber)
 				.findFirst()
 				.orElse(null);
 	}
 
-	public List<Sector> getSectorList() {
-		return sectorList;
+	public List<Sector> getSectors() {
+		return sectors;
 	}
 
 	public void addSector(Sector sector) {
@@ -49,7 +49,7 @@ public class Card {
 					"Sector is already added with the following number: " + existingSector.getIndex());
 		}
 
-		sectorList.add(sector);
+		sectors.add(sector);
 	}
 
 	public void addBlock(int sectorIndex, int blockIndex, byte[] byteData) {
@@ -77,7 +77,7 @@ public class Card {
 	@Override
 	public String toString() {
 		return "\nCard [" + getTagIdAsString() +
-				"]\n" + sectorList
+				"]\n" + sectors
 				.stream()
 				.map(Sector::toString)
 				.reduce((sector, sector2) -> sector + "\n" + sector2)
