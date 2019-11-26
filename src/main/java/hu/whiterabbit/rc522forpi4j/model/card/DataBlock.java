@@ -86,8 +86,10 @@ public class DataBlock implements Block {
 
 	@Override
 	public String toString() {
+		String accessModeString = getAccessMode() == null ? "accessMode ???" : getAccessMode().toString();
+
 		return "\tBlock (" + getIndex() + ") " + blockTypeToString(getBlockType()) +
 				"\t" + getDataAsHex() +
-				"\t\t" + getAccessMode().toString();
+				"\t\t" + accessModeString;
 	}
 }

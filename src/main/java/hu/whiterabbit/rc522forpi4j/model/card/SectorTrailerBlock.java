@@ -67,8 +67,8 @@ public class SectorTrailerBlock implements Block {
 		this.accessMode = accessMode;
 	}
 
-	public void updateAccessMode() {
-		this.accessMode = getBlockAccessMode(this, this.getAccessBytes());
+	public void updateAccessMode(SectorTrailerBlock sectorTrailerBlock) {
+		this.accessMode = getBlockAccessMode(this, sectorTrailerBlock.getAccessBytes());
 	}
 
 	@Override

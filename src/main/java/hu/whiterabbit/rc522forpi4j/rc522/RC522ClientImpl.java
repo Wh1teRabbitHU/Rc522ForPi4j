@@ -110,15 +110,25 @@ public class RC522ClientImpl implements RC522Client {
 		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
 		Block block;
+		SectorTrailerBlock sectorTrailerBlock;
 		byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, blockAuthKey);
 
 		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
 			block = new SectorTrailerBlock(data);
+			sectorTrailerBlock = new SectorTrailerBlock(data);
 		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && sectorIndex == MANUFACTURER_SECTOR_INDEX) {
 			block = new ManufacturerBlock(data);
+
+			byte[] sectorTrailerData = authAndReadData(sectorIndex, SECTOR_TRAILER_BLOCK_INDEX, tagId, blockAuthKey);
+			sectorTrailerBlock = new SectorTrailerBlock(sectorTrailerData);
 		} else {
 			block = new DataBlock(blockIndex, data);
+
+			byte[] sectorTrailerData = authAndReadData(sectorIndex, SECTOR_TRAILER_BLOCK_INDEX, tagId, blockAuthKey);
+			sectorTrailerBlock = new SectorTrailerBlock(sectorTrailerData);
 		}
+
+		block.updateAccessMode(sectorTrailerBlock);
 
 		rc522.reset();
 

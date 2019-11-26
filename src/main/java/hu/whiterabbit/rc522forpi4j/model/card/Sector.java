@@ -87,7 +87,7 @@ public class Sector {
 			return;
 		}
 
-		sectorTrailerBlock.updateAccessMode();
+		sectorTrailerBlock.updateAccessMode(sectorTrailerBlock);
 
 		if (this.getManufacturerBlock() != null) {
 			this.getManufacturerBlock().updateAccessMode(sectorTrailerBlock);

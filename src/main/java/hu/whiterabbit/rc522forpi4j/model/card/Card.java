@@ -76,7 +76,7 @@ public class Card {
 
 	@Override
 	public String toString() {
-		return "\nCard [" + getTagIdAsString() +
+		return "Card [" + getTagIdAsString() +
 				"]\n" + sectors
 				.stream()
 				.map(Sector::toString)

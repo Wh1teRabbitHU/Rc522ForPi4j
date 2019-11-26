@@ -19,6 +19,10 @@ public class CardUtil {
 	}
 
 	public static String blockTypeToString(BlockType blockType) {
+		if (blockType == null) {
+			return "[???]";
+		}
+
 		int blockTypeLength = blockType.toString().length();
 		int maxBlockTypeLength = BlockType.SECTOR_TRAILER.toString().length();
 		int extraSpaceNeeded = maxBlockTypeLength - blockTypeLength;
