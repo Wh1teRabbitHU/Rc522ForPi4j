@@ -20,9 +20,9 @@ public class RC522Adapter {
 
 	private static final int MAX_SPEED = 32000000;
 
-	private final int spiChannel;
-
 	private static final int MAX_LEN = 16;
+
+	private final int spiChannel;
 
 	public RC522Adapter(int speed, int resetPin, int spiChannel) {
 		this.spiChannel = spiChannel;
@@ -44,7 +44,7 @@ public class RC522Adapter {
 		writeRC522(T_PRESCALER_REG, (byte) 0x3E);
 		writeRC522(T_RELOAD_REG_L, (byte) 30);
 		writeRC522(T_RELOAD_REG_H, (byte) 0);
-		writeRC522(TX_AUTO_REG, (byte) 0x40);
+		writeRC522(TX_ASK_REG, (byte) 0x40);
 		writeRC522(MODE_REG, (byte) 0x3D);
 
 		antennaOn();
@@ -109,7 +109,7 @@ public class RC522Adapter {
 		if (command == PCD_AUTHENT) {
 			irq = 0x12;
 			irq_wait = 0x10;
-		} else if (command == PCD_TRANSCEIVE) {
+		} else if (command == CONTROL_REG) {
 			irq = 0x77;
 			irq_wait = 0x30;
 		} else {
@@ -127,7 +127,7 @@ public class RC522Adapter {
 			writeRC522(FIFO_DATA_REG, sendingData[i]);
 
 		writeRC522(COMMAND_REG, command);
-		if (command == PCD_TRANSCEIVE)
+		if (command == CONTROL_REG)
 			setBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		i = 2000;
@@ -151,7 +151,7 @@ public class RC522Adapter {
 				status = MI_NOTAGERR;
 			}
 
-			if (command == PCD_TRANSCEIVE) {
+			if (command == CONTROL_REG) {
 				n = readRC522(FIFO_LEVEL_REG);
 				lastBits = (byte) (readRC522(CONTROL_REG) & 0x07);
 
@@ -191,41 +191,10 @@ public class RC522Adapter {
 
 		tagType[0] = reqMode;
 
-		CommunicationResult result = writeCard(PCD_TRANSCEIVE, tagType);
+		CommunicationResult result = writeCard(CONTROL_REG, tagType);
 
 		if (!result.isSuccess() || result.getBits() != 0x10) {
 			result.setStatus(CommunicationStatus.ERROR);
-		}
-
-		return result;
-	}
-
-	//Anti-collision detection.
-	//Returns tuple of (error state, tag ID).
-	public CommunicationResult antiColl() {
-		byte[] serialNumber = new byte[2];
-		int serialNumberCheck = 0;
-
-		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
-		serialNumber[0] = PICC_ANTICOLL;
-		serialNumber[1] = 0x20;
-
-		CommunicationResult result = writeCard(PCD_TRANSCEIVE, serialNumber);
-
-		if (result.isSuccess()) {
-			if (result.getLength() == 5) {
-				for (int i = 0; i < 4; i++) {
-					serialNumberCheck ^= result.getDataByte(i);
-				}
-
-				if (serialNumberCheck != result.getDataByte(4)) {
-					logger.error("check error");
-
-					result.setStatus(CommunicationStatus.ERROR);
-				}
-			} else {
-				logger.error("backLen=" + result.getLength());
-			}
 		}
 
 		return result;
@@ -239,7 +208,7 @@ public class RC522Adapter {
 			writeRC522(FIFO_DATA_REG, data[i]);
 		}
 
-		writeRC522(COMMAND_REG, PCD_CALCCRC);
+		writeRC522(COMMAND_REG, DIVL_EN_REG);
 
 		int n;
 		int i = 255;
@@ -249,25 +218,8 @@ public class RC522Adapter {
 			i--;
 		} while ((i != 0) && ((n & 0x04) <= 0));
 
-		data[data.length - 2] = readRC522(CRC_RESULT_REG_L);
-		data[data.length - 1] = readRC522(CRC_RESULT_REG_M);
-	}
-
-	public boolean selectTag(byte[] uid) {
-		byte[] data = new byte[9];
-
-		data[0] = PICC_SElECTTAG;
-		data[1] = 0x70;
-
-		for (int i = 0, j = 2; i < 5; i++, j++) {
-			data[j] = uid[i];
-		}
-
-		calculateCRC(data);
-
-		CommunicationResult result = writeCard(PCD_TRANSCEIVE, data);
-
-		return result.isSuccess() && result.getBits() == 0x18;
+		data[data.length - 2] = readRC522(CRC_RESULT_REG_LSB);
+		data[data.length - 1] = readRC522(CRC_RESULT_REG_MSB);
 	}
 
 	//Authenticates to use specified block address. Tag must be selected using select_tag(uid) before auth.
@@ -313,7 +265,7 @@ public class RC522Adapter {
 
 		calculateCRC(data);
 
-		CommunicationResult result = writeCard(PCD_TRANSCEIVE, data);
+		CommunicationResult result = writeCard(CONTROL_REG, data);
 
 		if (result.getLength() == 16) {
 			result.setStatus(CommunicationStatus.SUCCESS);
@@ -336,7 +288,7 @@ public class RC522Adapter {
 
 		calculateCRC(buff);
 
-		CommunicationResult result = writeCard(PCD_TRANSCEIVE, buff);
+		CommunicationResult result = writeCard(CONTROL_REG, buff);
 		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
 			result.setStatus(CommunicationStatus.ERROR);
 
@@ -347,7 +299,7 @@ public class RC522Adapter {
 
 		calculateCRC(buffWrite);
 
-		result = writeCard(PCD_TRANSCEIVE, buffWrite);
+		result = writeCard(CONTROL_REG, buffWrite);
 		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
 			result.setStatus(CommunicationStatus.ERROR);
 
@@ -357,34 +309,73 @@ public class RC522Adapter {
 		return result;
 	}
 
-	//Convert sector  to blockaddress
-	//sector-0~15
-	//block-0~3
-	//return blockaddress
-	private byte sector2BlockAddress(byte sector, byte block) {
-		if (sector < 0 || sector > 15 || block < 0 || block > 3) {
-			return (byte) (-1);
-		}
 
-		return (byte) (sector * 4 + block);
-	}
-
-	//uid-5 bytes
+	/*
+	 * Selecting your card
+	 */
 	public CommunicationStatus selectMirareOne(byte[] uid) {
-		CommunicationResult result = request(PICC_REQIDL);
-		if (!result.isSuccess()) {
-			return result.getStatus();
+		CommunicationResult requestResult = request(RF_CFG_REG);
+		if (!requestResult.isSuccess()) {
+			return requestResult.getStatus();
 		}
 
-		result = antiColl();
-		if (!result.isSuccess()) {
-			return result.getStatus();
+		CommunicationResult antiCollisionResult = antiCollision();
+		if (!antiCollisionResult.isSuccess()) {
+			return antiCollisionResult.getStatus();
 		}
 
-		selectTag(result.getData());
-		System.arraycopy(result.getData(), 0, uid, 0, 5);
+		selectTag(antiCollisionResult.getData());
+		System.arraycopy(antiCollisionResult.getData(), 0, uid, 0, 5);
 
 		return CommunicationStatus.SUCCESS;
+	}
+
+	//Anti-collision detection.
+	//Returns tuple of (error state, tag ID).
+	public CommunicationResult antiCollision() {
+		byte[] serialNumber = new byte[2];
+		int serialNumberCheck = 0;
+
+		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
+		serialNumber[0] = ANTICOLLISION_CL1_1;
+		serialNumber[1] = ANTICOLLISION_CL1_2;
+
+		CommunicationResult result = writeCard(CONTROL_REG, serialNumber);
+
+		if (result.isSuccess()) {
+			if (result.getLength() == 5) {
+				for (int i = 0; i < 4; i++) {
+					serialNumberCheck ^= result.getDataByte(i);
+				}
+
+				if (serialNumberCheck != result.getDataByte(4)) {
+					logger.error("check error");
+
+					result.setStatus(CommunicationStatus.ERROR);
+				}
+			} else {
+				logger.error("backLen=" + result.getLength());
+			}
+		}
+
+		return result;
+	}
+
+	public boolean selectTag(byte[] uid) {
+		byte[] data = new byte[9];
+
+		data[0] = SELECT_CL1_1;
+		data[1] = SELECT_CL1_2;
+
+		for (int i = 0, j = 2; i < 5; i++, j++) {
+			data[j] = uid[i];
+		}
+
+		calculateCRC(data);
+
+		CommunicationResult result = writeCard(CONTROL_REG, data);
+
+		return result.isSuccess() && result.getBits() == 0x18;
 	}
 
 }

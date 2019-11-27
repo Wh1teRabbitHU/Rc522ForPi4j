@@ -65,7 +65,11 @@ public class DataUtil {
 		byte[] result = new byte[number];
 
 		for (int i = 0; i < number; i++) {
-			result[i] = bytes[startingIndex + i];
+			if (bytes == null || bytes.length <= startingIndex + i) {
+				result[i] = 0;
+			} else {
+				result[i] = bytes[startingIndex + i];
+			}
 		}
 
 		return result;

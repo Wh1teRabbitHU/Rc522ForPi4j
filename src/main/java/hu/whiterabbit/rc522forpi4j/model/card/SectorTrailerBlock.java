@@ -20,6 +20,10 @@ public class SectorTrailerBlock implements Block {
 	private BlockAccessMode accessMode;
 
 	public SectorTrailerBlock(byte[] data) {
+		if (data == null) {
+			data = new byte[MAX_BLOCK_SIZE];
+		}
+
 		this.keyA = getByteRange(data, 0, 6);
 		this.accessBytes = getByteRange(data, 6, 3);
 		this.dataByte = data[9];

@@ -1,4 +1,4 @@
-package hu.whiterabbit.rc522forpi4j.model.card;
+package hu.whiterabbit.rc522forpi4j.model.auth;
 
 import java.util.ArrayList;
 import java.util.List;

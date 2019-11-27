@@ -1,6 +1,6 @@
 package hu.whiterabbit.rc522forpi4j.util;
 
-public enum AccessModeBit {
+enum AccessModeBit {
 
 	C0_1(0, 1, false), C0_2(0, 2, false), C0_3(0, 3, false),
 	C0_1_N(0, 1, true), C0_2_N(0, 2, true), C0_3_N(0, 3, true),
