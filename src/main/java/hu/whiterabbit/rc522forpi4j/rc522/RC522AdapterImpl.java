@@ -41,6 +41,9 @@ public class RC522AdapterImpl implements RC522Adapter {
 		reset();
 	}
 
+	/**
+	 * Resets your RC522 module
+	 */
 	@Override
 	public void reset() {
 		writeRC522(COMMAND_REG, PCD_RESETPHASE);
@@ -55,7 +58,8 @@ public class RC522AdapterImpl implements RC522Adapter {
 	}
 
 	/**
-	 * Selecting card and returns with the tagId.
+	 * It selects a card and returns with the tagId. First it send a request, then it set up the anti-collision and
+	 * finally it select the card for further operations
 	 *
 	 * @return The CommunicationResult object with the tagId array
 	 */
@@ -80,11 +84,15 @@ public class RC522AdapterImpl implements RC522Adapter {
 		return selectTagResult;
 	}
 
-	//Authenticates to use specified block address. Tag must be selected using select_tag(uid) before auth.
-	//auth_mode-RFID.auth_a or RFID.auth_b
-	//block_address- used to authenticate
-	//key-list or tuple with six bytes key
-	//uid-list or tuple with four bytes tag ID
+	/**
+	 * Authenticates a given block on your already selected card. You must select your card before this process!
+	 *
+	 * @param authMode     Either it can be PICC_AUTHENT1A or PICC_AUTHENT1B, depends on the key type, 1 byte long
+	 * @param blockAddress Target block address, 1 byte long
+	 * @param key          The authentication's key, 6 bytes long
+	 * @param uid          The selected cards tagId (uid), 4 bytes long
+	 * @return The result of the authentication process
+	 */
 	@Override
 	public CommunicationResult authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
 		byte[] data = new byte[12];
@@ -103,10 +111,13 @@ public class RC522AdapterImpl implements RC522Adapter {
 		return result;
 	}
 
-	//Reads data from block. You should be authenticated before calling read.
-	//Returns tuple of (result state, read data).
-	//block_address
-	//back_data-data to be read,16 bytes
+	/**
+	 * Reads data from block. You must authenticate this block before reading from it! The returned CommunicationResult
+	 * object contains the block data, which is 16 bytes long!
+	 *
+	 * @param blockAddress The address of your target block
+	 * @return The result object with the block data
+	 */
 	@Override
 	public CommunicationResult read(byte blockAddress) {
 		byte[] data = new byte[4];
@@ -125,9 +136,13 @@ public class RC522AdapterImpl implements RC522Adapter {
 		return result;
 	}
 
-	//Writes data to block. You should be authenticated before calling write.
-	//Returns error state.
-	//data-16 bytes
+	/**
+	 * Writes data to the target block. You must authenticate this block before writing to it!
+	 *
+	 * @param blockAddress The target block's address
+	 * @param data         A 16 bytes long data array
+	 * @return The result of the communication
+	 */
 	@Override
 	public CommunicationResult write(byte blockAddress, byte[] data) {
 		byte[] buff = new byte[4];

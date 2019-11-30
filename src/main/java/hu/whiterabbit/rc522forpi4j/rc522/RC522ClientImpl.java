@@ -9,6 +9,8 @@ import hu.whiterabbit.rc522forpi4j.util.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static hu.whiterabbit.rc522forpi4j.model.auth.BlockAuthKey.getFactoryDefaultKey;
+import static hu.whiterabbit.rc522forpi4j.model.auth.BlockAuthKey.getFactoryDefaultSectorKey;
 import static hu.whiterabbit.rc522forpi4j.model.card.Card.TAG_ID_SIZE;
 import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_BLOCK_INDEX;
 import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_SECTOR_INDEX;
@@ -29,6 +31,12 @@ public class RC522ClientImpl implements RC522Client {
 
 	private static final RC522Adapter rc522 = new RC522AdapterImpl(SPEED, RESET_PIN, SPI_CHANNEL);
 
+	/**
+	 * Select one of your card and read its tagId. If the selection has error or no rad is present then it will return
+	 * with a null.
+	 *
+	 * @return The selected card id or null if no card present or the selection process is failed
+	 */
 	@Override
 	public byte[] readCardTag() {
 		CommunicationResult readResult = rc522.selectCard();
@@ -40,11 +48,24 @@ public class RC522ClientImpl implements RC522Client {
 		return readResult.getData(TAG_ID_SIZE);
 	}
 
+	/**
+	 * Reads all data from your card. If no card present or the process is failed it returns with null. This method is
+	 * using the factory default authentication keys.
+	 *
+	 * @return The Card object with all the readable card data
+	 */
 	@Override
 	public Card readCardData() {
 		return readCardData(CardAuthKey.getFactoryDefaultKey());
 	}
 
+	/**
+	 * Reads all data from your card. If no card present or the process is failed it returns with null. This method is
+	 * using the given authentication keys.
+	 *
+	 * @param cardAuthKey Authentication keys for the whole card
+	 * @return The Card object with all the readable card data
+	 */
 	@Override
 	public Card readCardData(CardAuthKey cardAuthKey) {
 		byte[] tagId = readCardTag();
@@ -72,11 +93,26 @@ public class RC522ClientImpl implements RC522Client {
 		return card;
 	}
 
+	/**
+	 * Reads a specific sector data from your selected card. If no card present or the process is failed it returns
+	 * with null. This method is using the factory default authentication keys.
+	 *
+	 * @param sectorIndex The target sector's index
+	 * @return The Sector object with all the readable card data
+	 */
 	@Override
 	public Sector readSectorData(int sectorIndex) {
 		return readSectorData(sectorIndex, SectorAuthKey.getFactoryDefaultKey(sectorIndex));
 	}
 
+	/**
+	 * Reads a specific sector data from your selected card. If no card present or the process is failed it returns
+	 * with null. This method is using the given authentication keys.
+	 *
+	 * @param sectorIndex   The target sector's index
+	 * @param sectorAuthKey Authentication keys for the target sector
+	 * @return The Sector object with all the readable card data
+	 */
 	@Override
 	public Sector readSectorData(int sectorIndex, SectorAuthKey sectorAuthKey) {
 		byte[] tagId = readCardTag();
@@ -102,13 +138,31 @@ public class RC522ClientImpl implements RC522Client {
 		return sector;
 	}
 
+	/**
+	 * Reads a specific block data from your selected card. If no card present or the process is failed it returns
+	 * with null. This method is using the factory default authentication keys.
+	 *
+	 * @param sectorIndex The target sector's index
+	 * @param blockIndex  The target block's index
+	 * @return The Block object with all the readable card data
+	 */
 	@Override
 	public Block readBlockData(int sectorIndex, int blockIndex) {
-		return readBlockData(sectorIndex, blockIndex, BlockAuthKey.getFactoryDefaultKey(blockIndex));
+		return readBlockData(sectorIndex, blockIndex, getFactoryDefaultSectorKey(), getFactoryDefaultKey(blockIndex));
 	}
 
+	/**
+	 * Reads a specific block data from your selected card. If no card present or the process is failed it returns
+	 * with null. This method is using the given authentication keys.
+	 *
+	 * @param sectorIndex          The target sector's index
+	 * @param blockIndex           The target block's index
+	 * @param sectorTrailerAuthKey Authentication key for the target block's sector trailer block
+	 * @param blockAuthKey         Authentication key for the target block
+	 * @return The Block object with all the readable card data
+	 */
 	@Override
-	public Block readBlockData(int sectorIndex, int blockIndex, BlockAuthKey blockAuthKey) {
+	public Block readBlockData(int sectorIndex, int blockIndex, BlockAuthKey sectorTrailerAuthKey, BlockAuthKey blockAuthKey) {
 		byte[] tagId = readCardTag();
 
 		if (tagId == null) {

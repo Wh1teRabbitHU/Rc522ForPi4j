@@ -21,6 +21,6 @@ public interface RC522Client {
 
 	Block readBlockData(int sectorIndex, int blockIndex);
 
-	Block readBlockData(int sectorIndex, int blockIndex, BlockAuthKey blockAuthKey);
+	Block readBlockData(int sectorIndex, int blockIndex, BlockAuthKey sectorTrailerAuthKey, BlockAuthKey blockAuthKey);
 
 }

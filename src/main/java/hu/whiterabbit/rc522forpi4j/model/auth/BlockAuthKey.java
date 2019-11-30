@@ -1,5 +1,9 @@
 package hu.whiterabbit.rc522forpi4j.model.auth;
 
+import hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock;
+
+import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_TRAILER_BLOCK_INDEX;
+
 public class BlockAuthKey {
 
 	private static final byte[] FACTORY_DEFAULT_KEY = new byte[]{
@@ -34,6 +38,15 @@ public class BlockAuthKey {
 
 	public void setKey(byte[] key) {
 		this.key = key;
+	}
+
+	public static BlockAuthKey getFactoryDefaultSectorKey() {
+		BlockAuthKey authKey = new BlockAuthKey(SECTOR_TRAILER_BLOCK_INDEX);
+
+		authKey.setKeyType(AuthKeyType.AUTH_A);
+		authKey.setKey(FACTORY_DEFAULT_KEY);
+
+		return authKey;
 	}
 
 	public static BlockAuthKey getFactoryDefaultKey(int blockIndex) {
