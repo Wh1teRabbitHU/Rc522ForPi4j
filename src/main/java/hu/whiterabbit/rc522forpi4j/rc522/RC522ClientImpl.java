@@ -27,7 +27,7 @@ public class RC522ClientImpl implements RC522Client {
 
 	private static final int SPI_CHANNEL = 0;
 
-	private static final RC522Adapter rc522 = new RC522Adapter(SPEED, RESET_PIN, SPI_CHANNEL);
+	private static final RC522Adapter rc522 = new RC522AdapterImpl(SPEED, RESET_PIN, SPI_CHANNEL);
 
 	@Override
 	public byte[] readCardTag() {
