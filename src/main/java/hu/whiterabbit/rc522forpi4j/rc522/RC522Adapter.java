@@ -6,8 +6,11 @@ import hu.whiterabbit.rc522forpi4j.raspberry.RaspberryPiAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static hu.whiterabbit.rc522forpi4j.model.card.Block.BYTE_COUNT;
+import static hu.whiterabbit.rc522forpi4j.model.card.Card.TAG_ID_SIZE;
 import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.*;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.getStatus;
+import static java.lang.System.arraycopy;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class RC522Adapter {
@@ -50,6 +53,169 @@ public class RC522Adapter {
 		antennaOn();
 	}
 
+	/**
+	 * Selecting card and returns with the tagId.
+	 *
+	 * @return The CommunicationResult object with the tagId array
+	 */
+	public CommunicationResult selectCard() {
+		CommunicationResult requestResult = request();
+		if (!requestResult.isSuccess()) {
+			return requestResult;
+		}
+
+		CommunicationResult antiCollisionResult = antiCollision();
+		if (!antiCollisionResult.isSuccess()) {
+			return antiCollisionResult;
+		}
+
+		byte[] tagId = antiCollisionResult.getData(TAG_ID_SIZE);
+
+		CommunicationResult selectTagResult = selectTag(tagId);
+
+		selectTagResult.setData(tagId);
+
+		return selectTagResult;
+	}
+
+	//Authenticates to use specified block address. Tag must be selected using select_tag(uid) before auth.
+	//auth_mode-RFID.auth_a or RFID.auth_b
+	//block_address- used to authenticate
+	//key-list or tuple with six bytes key
+	//uid-list or tuple with four bytes tag ID
+	public CommunicationResult authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
+		byte[] data = new byte[12];
+
+		data[0] = authMode;
+		data[1] = blockAddress;
+		arraycopy(key, 0, data, 2, 6);
+		arraycopy(uid, 0, data, 8, 4);
+
+		CommunicationResult result = writeCard(PCD_AUTHENT, data);
+
+		if ((readRC522(STATUS_2_REG) & 0x08) == 0) {
+			result.setStatus(CommunicationStatus.ERROR);
+		}
+
+		return result;
+	}
+
+	//Reads data from block. You should be authenticated before calling read.
+	//Returns tuple of (result state, read data).
+	//block_address
+	//back_data-data to be read,16 bytes
+	public CommunicationResult read(byte blockAddress) {
+		byte[] data = new byte[4];
+
+		data[0] = PICC_READ;
+		data[1] = blockAddress;
+
+		calculateCRC(data);
+
+		CommunicationResult result = writeCard(CONTROL_REG, data);
+
+		boolean isDataLengthValid = result.getLength() == BYTE_COUNT;
+
+		result.setStatus(isDataLengthValid ? CommunicationStatus.SUCCESS : CommunicationStatus.ERROR);
+
+		return result;
+	}
+
+	//Writes data to block. You should be authenticated before calling write.
+	//Returns error state.
+	//data-16 bytes
+	public CommunicationResult write(byte blockAddress, byte[] data) {
+		byte[] buff = new byte[4];
+		byte[] buffWrite = new byte[data.length + 2];
+
+		buff[0] = PICC_WRITE;
+		buff[1] = blockAddress;
+
+		calculateCRC(buff);
+
+		CommunicationResult result = writeCard(CONTROL_REG, buff);
+		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
+			result.setStatus(CommunicationStatus.ERROR);
+
+			return result;
+		}
+
+		arraycopy(data, 0, buffWrite, 0, data.length);
+
+		calculateCRC(buffWrite);
+
+		result = writeCard(CONTROL_REG, buffWrite);
+		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
+			result.setStatus(CommunicationStatus.ERROR);
+
+			return result;
+		}
+
+		return result;
+	}
+
+	//Anti-collision detection.
+	//Returns tuple of (error state, tag ID).
+	private CommunicationResult antiCollision() {
+		byte[] serialNumber = new byte[2];
+		int serialNumberCheck = 0;
+
+		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
+		serialNumber[0] = ANTICOLLISION_CL1_1;
+		serialNumber[1] = ANTICOLLISION_CL1_2;
+
+		CommunicationResult result = writeCard(CONTROL_REG, serialNumber);
+
+		if (result.isSuccess()) {
+			if (result.getLength() == 5) {
+				for (int i = 0; i < 4; i++) {
+					serialNumberCheck ^= result.getDataByte(i);
+				}
+
+				if (serialNumberCheck != result.getDataByte(4)) {
+					logger.error("check error");
+
+					result.setStatus(CommunicationStatus.ERROR);
+				}
+			} else {
+				logger.error("backLen=" + result.getLength());
+			}
+		}
+
+		return result;
+	}
+
+	private CommunicationResult selectTag(byte[] uid) {
+		byte[] data = new byte[9];
+
+		data[0] = SELECT_CL1_1;
+		data[1] = SELECT_CL1_2;
+
+		for (int i = 0, j = 2; i < 5; i++, j++) {
+			data[j] = uid[i];
+		}
+
+		calculateCRC(data);
+
+		return writeCard(CONTROL_REG, data);
+	}
+
+	private CommunicationResult request() {
+		byte[] tagType = new byte[1];
+
+		writeRC522(BIT_FRAMING_REG, (byte) 0x07);
+
+		tagType[0] = RF_CFG_REG;
+
+		CommunicationResult result = writeCard(CONTROL_REG, tagType);
+
+		if (!result.isSuccess() || result.getBits() != 0x10) {
+			result.setStatus(CommunicationStatus.ERROR);
+		}
+
+		return result;
+	}
+
 	private void writeRC522(byte address, byte value) {
 		byte[] data = new byte[2];
 
@@ -73,6 +239,28 @@ public class RC522Adapter {
 		}
 
 		return data[1];
+	}
+
+	private void calculateCRC(byte[] data) {
+		clearBitMask(DIV_IRQ_REG, (byte) 0x04);
+		setBitMask(FIFO_LEVEL_REG, (byte) 0x80);
+
+		for (int i = 0; i < data.length - 2; i++) {
+			writeRC522(FIFO_DATA_REG, data[i]);
+		}
+
+		writeRC522(COMMAND_REG, DIVL_EN_REG);
+
+		int n;
+		int i = 255;
+
+		do {
+			n = readRC522(DIV_IRQ_REG);
+			i--;
+		} while ((i != 0) && ((n & 0x04) <= 0));
+
+		data[data.length - 2] = readRC522(CRC_RESULT_REG_LSB);
+		data[data.length - 1] = readRC522(CRC_RESULT_REG_MSB);
 	}
 
 	private void setBitMask(byte address, byte mask) {
@@ -182,200 +370,6 @@ public class RC522Adapter {
 		result.setStatus(CommunicationStatus.ERROR);
 
 		return result;
-	}
-
-	public CommunicationResult request(byte reqMode) {
-		byte[] tagType = new byte[1];
-
-		writeRC522(BIT_FRAMING_REG, (byte) 0x07);
-
-		tagType[0] = reqMode;
-
-		CommunicationResult result = writeCard(CONTROL_REG, tagType);
-
-		if (!result.isSuccess() || result.getBits() != 0x10) {
-			result.setStatus(CommunicationStatus.ERROR);
-		}
-
-		return result;
-	}
-
-	private void calculateCRC(byte[] data) {
-		clearBitMask(DIV_IRQ_REG, (byte) 0x04);
-		setBitMask(FIFO_LEVEL_REG, (byte) 0x80);
-
-		for (int i = 0; i < data.length - 2; i++) {
-			writeRC522(FIFO_DATA_REG, data[i]);
-		}
-
-		writeRC522(COMMAND_REG, DIVL_EN_REG);
-
-		int n;
-		int i = 255;
-
-		do {
-			n = readRC522(DIV_IRQ_REG);
-			i--;
-		} while ((i != 0) && ((n & 0x04) <= 0));
-
-		data[data.length - 2] = readRC522(CRC_RESULT_REG_LSB);
-		data[data.length - 1] = readRC522(CRC_RESULT_REG_MSB);
-	}
-
-	//Authenticates to use specified block address. Tag must be selected using select_tag(uid) before auth.
-	//auth_mode-RFID.auth_a or RFID.auth_b
-	//block_address- used to authenticate
-	//key-list or tuple with six bytes key
-	//uid-list or tuple with four bytes tag ID
-	public CommunicationResult authCard(byte authMode, byte blockAddress, byte[] key, byte[] uid) {
-		byte[] data = new byte[12];
-
-		data[0] = authMode;
-		data[1] = blockAddress;
-		for (int i = 0, j = 2; i < 6; i++, j++) {
-			data[j] = key[i];
-		}
-		for (int i = 0, j = 8; i < 4; i++, j++) {
-			data[j] = uid[i];
-		}
-
-		CommunicationResult result = writeCard(PCD_AUTHENT, data);
-
-		if ((readRC522(STATUS_2_REG) & 0x08) == 0) {
-			result.setStatus(CommunicationStatus.ERROR);
-		}
-
-		return result;
-	}
-
-	//Ends operations with Crypto1 usage.
-	public void stopCrypto() {
-		clearBitMask(STATUS_2_REG, (byte) 0x08);
-	}
-
-	//Reads data from block. You should be authenticated before calling read.
-	//Returns tuple of (result state, read data).
-	//block_address
-	//back_data-data to be read,16 bytes
-	public CommunicationResult read(byte blockAddress) {
-		byte[] data = new byte[4];
-
-		data[0] = PICC_READ;
-		data[1] = blockAddress;
-
-		calculateCRC(data);
-
-		CommunicationResult result = writeCard(CONTROL_REG, data);
-
-		if (result.getLength() == 16) {
-			result.setStatus(CommunicationStatus.SUCCESS);
-
-			return result;
-		}
-
-		return result;
-	}
-
-	//Writes data to block. You should be authenticated before calling write.
-	//Returns error state.
-	//data-16 bytes
-	public CommunicationResult write(byte blockAddress, byte[] data) {
-		byte[] buff = new byte[4];
-		byte[] buffWrite = new byte[data.length + 2];
-
-		buff[0] = PICC_WRITE;
-		buff[1] = blockAddress;
-
-		calculateCRC(buff);
-
-		CommunicationResult result = writeCard(CONTROL_REG, buff);
-		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
-			result.setStatus(CommunicationStatus.ERROR);
-
-			return result;
-		}
-
-		System.arraycopy(data, 0, buffWrite, 0, data.length);
-
-		calculateCRC(buffWrite);
-
-		result = writeCard(CONTROL_REG, buffWrite);
-		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
-			result.setStatus(CommunicationStatus.ERROR);
-
-			return result;
-		}
-
-		return result;
-	}
-
-
-	/*
-	 * Selecting your card
-	 */
-	public CommunicationStatus selectMirareOne(byte[] uid) {
-		CommunicationResult requestResult = request(RF_CFG_REG);
-		if (!requestResult.isSuccess()) {
-			return requestResult.getStatus();
-		}
-
-		CommunicationResult antiCollisionResult = antiCollision();
-		if (!antiCollisionResult.isSuccess()) {
-			return antiCollisionResult.getStatus();
-		}
-
-		selectTag(antiCollisionResult.getData());
-		System.arraycopy(antiCollisionResult.getData(), 0, uid, 0, 5);
-
-		return CommunicationStatus.SUCCESS;
-	}
-
-	//Anti-collision detection.
-	//Returns tuple of (error state, tag ID).
-	public CommunicationResult antiCollision() {
-		byte[] serialNumber = new byte[2];
-		int serialNumberCheck = 0;
-
-		writeRC522(BIT_FRAMING_REG, (byte) 0x00);
-		serialNumber[0] = ANTICOLLISION_CL1_1;
-		serialNumber[1] = ANTICOLLISION_CL1_2;
-
-		CommunicationResult result = writeCard(CONTROL_REG, serialNumber);
-
-		if (result.isSuccess()) {
-			if (result.getLength() == 5) {
-				for (int i = 0; i < 4; i++) {
-					serialNumberCheck ^= result.getDataByte(i);
-				}
-
-				if (serialNumberCheck != result.getDataByte(4)) {
-					logger.error("check error");
-
-					result.setStatus(CommunicationStatus.ERROR);
-				}
-			} else {
-				logger.error("backLen=" + result.getLength());
-			}
-		}
-
-		return result;
-	}
-
-	public boolean selectTag(byte[] uid) {
-		byte[] data = new byte[9];
-
-		data[0] = SELECT_CL1_1;
-		data[1] = SELECT_CL1_2;
-
-		for (int i = 0, j = 2; i < 5; i++, j++) {
-			data[j] = uid[i];
-		}
-
-		calculateCRC(data);
-
-		CommunicationResult result = writeCard(CONTROL_REG, data);
-
-		return result.isSuccess() && result.getBits() == 0x18;
 	}
 
 }

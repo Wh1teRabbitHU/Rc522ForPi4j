@@ -3,9 +3,13 @@ package hu.whiterabbit.rc522forpi4j.rc522;
 import hu.whiterabbit.rc522forpi4j.model.auth.BlockAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.auth.CardAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.auth.SectorAuthKey;
-import hu.whiterabbit.rc522forpi4j.model.card.*;
+import hu.whiterabbit.rc522forpi4j.model.card.Block;
+import hu.whiterabbit.rc522forpi4j.model.card.Card;
+import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 
 public interface RC522Client {
+
+	byte[] readCardTag();
 
 	Card readCardData();
 

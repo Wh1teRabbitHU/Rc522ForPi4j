@@ -1,8 +1,12 @@
 package hu.whiterabbit.rc522forpi4j.model.communication;
 
+import java.util.Arrays;
+
+import static hu.whiterabbit.rc522forpi4j.model.card.Block.BYTE_COUNT;
+
 public class CommunicationResult {
 
-	private byte[] data = new byte[16];
+	private byte[] data = new byte[BYTE_COUNT];
 
 	private int length = 0;
 
@@ -12,6 +16,14 @@ public class CommunicationResult {
 
 	public byte[] getData() {
 		return data;
+	}
+
+	public byte[] getData(int length) {
+		return Arrays.copyOf(data, length);
+	}
+
+	public void setData(byte[] data) {
+		this.data = data;
 	}
 
 	public byte getDataByte(int index) {

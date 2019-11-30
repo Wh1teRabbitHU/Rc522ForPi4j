@@ -5,11 +5,11 @@ import hu.whiterabbit.rc522forpi4j.model.auth.CardAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.auth.SectorAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.card.*;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
-import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
 import hu.whiterabbit.rc522forpi4j.util.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static hu.whiterabbit.rc522forpi4j.model.card.Card.TAG_ID_SIZE;
 import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_BLOCK_INDEX;
 import static hu.whiterabbit.rc522forpi4j.model.card.ManufacturerBlock.MANUFACTURER_SECTOR_INDEX;
 import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_TRAILER_BLOCK_INDEX;
@@ -27,10 +27,18 @@ public class RC522ClientImpl implements RC522Client {
 
 	private static final int SPI_CHANNEL = 0;
 
-	private static final byte[] KEY_A = new byte[]{(byte) 0x03, (byte) 0x03, (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03};
-	private static final byte[] KEY_B = new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
-
 	private static final RC522Adapter rc522 = new RC522Adapter(SPEED, RESET_PIN, SPI_CHANNEL);
+
+	@Override
+	public byte[] readCardTag() {
+		CommunicationResult readResult = rc522.selectCard();
+
+		if (!readResult.isSuccess()) {
+			return null;
+		}
+
+		return readResult.getData(TAG_ID_SIZE);
+	}
 
 	@Override
 	public Card readCardData() {
@@ -39,10 +47,9 @@ public class RC522ClientImpl implements RC522Client {
 
 	@Override
 	public Card readCardData(CardAuthKey cardAuthKey) {
-		byte[] tagId = new byte[5];
+		byte[] tagId = readCardTag();
 
-		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
-		if (readStatus == CommunicationStatus.ERROR) {
+		if (tagId == null) {
 			return null;
 		}
 
@@ -50,8 +57,8 @@ public class RC522ClientImpl implements RC522Client {
 
 		logger.info("Card Read UID: (HEX) {}", card.getTagIdAsString());
 
-		for (int sectorIndex = 0; sectorIndex < Card.MAX_CARD_SIZE; sectorIndex++) {
-			for (int blockIndex = 0; blockIndex < Sector.MAX_SECTOR_SIZE; blockIndex++) {
+		for (int sectorIndex = 0; sectorIndex < Card.SECTOR_COUNT; sectorIndex++) {
+			for (int blockIndex = 0; blockIndex < Sector.BLOCK_COUNT; blockIndex++) {
 				byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, cardAuthKey.getBlockAuthKey(sectorIndex, blockIndex));
 
 				card.addBlock(sectorIndex, blockIndex, data);
@@ -72,10 +79,9 @@ public class RC522ClientImpl implements RC522Client {
 
 	@Override
 	public Sector readSectorData(int sectorIndex, SectorAuthKey sectorAuthKey) {
-		byte[] tagId = new byte[5];
+		byte[] tagId = readCardTag();
 
-		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
-		if (readStatus == CommunicationStatus.ERROR) {
+		if (tagId == null) {
 			return null;
 		}
 
@@ -83,7 +89,7 @@ public class RC522ClientImpl implements RC522Client {
 
 		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
-		for (int blockIndex = 0; blockIndex < Sector.MAX_SECTOR_SIZE; blockIndex++) {
+		for (int blockIndex = 0; blockIndex < Sector.BLOCK_COUNT; blockIndex++) {
 			byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, sectorAuthKey.getBlockAuthKey(blockIndex));
 
 			sector.addBlock(blockIndex, data);
@@ -103,10 +109,9 @@ public class RC522ClientImpl implements RC522Client {
 
 	@Override
 	public Block readBlockData(int sectorIndex, int blockIndex, BlockAuthKey blockAuthKey) {
-		byte[] tagId = new byte[5];
+		byte[] tagId = readCardTag();
 
-		CommunicationStatus readStatus = rc522.selectMirareOne(tagId);
-		if (readStatus == CommunicationStatus.ERROR) {
+		if (tagId == null) {
 			return null;
 		}
 

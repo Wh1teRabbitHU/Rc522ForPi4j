@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static hu.whiterabbit.rc522forpi4j.model.card.Card.MAX_CARD_SIZE;
+import static hu.whiterabbit.rc522forpi4j.model.card.Card.SECTOR_COUNT;
 
 public class CardAuthKey {
 
@@ -30,7 +30,7 @@ public class CardAuthKey {
 	public static CardAuthKey getFactoryDefaultKey() {
 		CardAuthKey authKey = new CardAuthKey();
 
-		for (int i = 0; i < MAX_CARD_SIZE; i++) {
+		for (int i = 0; i < SECTOR_COUNT; i++) {
 			authKey.addSectorAuthKeys(SectorAuthKey.getFactoryDefaultKey(i));
 		}
 

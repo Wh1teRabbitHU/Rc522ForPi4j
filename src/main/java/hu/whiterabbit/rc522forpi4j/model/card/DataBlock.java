@@ -2,7 +2,7 @@ package hu.whiterabbit.rc522forpi4j.model.card;
 
 import java.nio.charset.StandardCharsets;
 
-import static hu.whiterabbit.rc522forpi4j.model.card.Sector.MAX_SECTOR_SIZE;
+import static hu.whiterabbit.rc522forpi4j.model.card.Sector.BLOCK_COUNT;
 import static hu.whiterabbit.rc522forpi4j.util.CardUtil.blockTypeToString;
 import static hu.whiterabbit.rc522forpi4j.util.CardUtil.getBlockAccessMode;
 import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
@@ -18,17 +18,17 @@ public class DataBlock implements Block {
 	private BlockAccessMode accessMode;
 
 	public DataBlock(int index, byte[] data) {
-		if (index < 0 || index >= MAX_SECTOR_SIZE) {
+		if (index < 0 || index >= BLOCK_COUNT) {
 			throw new RuntimeException("Given block index is out of range! (" + index + ")");
-		} else if (data != null && data.length > MAX_BLOCK_SIZE) {
+		} else if (data != null && data.length > BYTE_COUNT) {
 			throw new RuntimeException("Given data array is too large! (" + data.length +
-					") It should be less than " + MAX_BLOCK_SIZE);
+					") It should be less than " + BYTE_COUNT);
 		}
 
 		this.index = index;
 
 		if (data == null) {
-			this.data = new byte[MAX_BLOCK_SIZE];
+			this.data = new byte[BYTE_COUNT];
 		} else {
 			this.data = data;
 		}
@@ -41,7 +41,7 @@ public class DataBlock implements Block {
 	}
 
 	public byte getByte(int byteIndex) {
-		if (byteIndex < 0 || byteIndex >= MAX_BLOCK_SIZE) {
+		if (byteIndex < 0 || byteIndex >= BYTE_COUNT) {
 			throw new RuntimeException("Given byte number is out of range! (" + byteIndex + ")");
 		}
 
@@ -49,7 +49,7 @@ public class DataBlock implements Block {
 	}
 
 	public void setByte(int byteIndex, byte value) {
-		if (byteIndex < 0 || byteIndex >= MAX_BLOCK_SIZE) {
+		if (byteIndex < 0 || byteIndex >= BYTE_COUNT) {
 			throw new RuntimeException("Given byte number is out of range! (" + byteIndex + ")");
 		}
 

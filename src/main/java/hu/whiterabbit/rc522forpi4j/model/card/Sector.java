@@ -9,7 +9,7 @@ import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_T
 
 public class Sector {
 
-	public static final int MAX_SECTOR_SIZE = 4;
+	public static final int BLOCK_COUNT = 4;
 
 	private final int index;
 
@@ -28,7 +28,7 @@ public class Sector {
 	}
 
 	public DataBlock getBlock(int blockNumber) {
-		if (blockNumber < 0 || blockNumber >= MAX_SECTOR_SIZE) {
+		if (blockNumber < 0 || blockNumber >= BLOCK_COUNT) {
 			throw new RuntimeException("Given block number is out of range! (" + blockNumber + ")");
 		}
 
@@ -93,7 +93,7 @@ public class Sector {
 			this.getManufacturerBlock().updateAccessMode(sectorTrailerBlock);
 		}
 
-		for (int blockIndex = 0; blockIndex < MAX_SECTOR_SIZE; blockIndex++) {
+		for (int blockIndex = 0; blockIndex < BLOCK_COUNT; blockIndex++) {
 			DataBlock dataBlock = this.getBlock(blockIndex);
 
 			if (dataBlock != null) {

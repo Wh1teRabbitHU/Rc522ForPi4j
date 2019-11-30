@@ -21,7 +21,7 @@ public class SectorTrailerBlock implements Block {
 
 	public SectorTrailerBlock(byte[] data) {
 		if (data == null) {
-			data = new byte[MAX_BLOCK_SIZE];
+			data = new byte[BYTE_COUNT];
 		}
 
 		this.keyA = getByteRange(data, 0, 6);
@@ -82,7 +82,7 @@ public class SectorTrailerBlock implements Block {
 
 	@Override
 	public byte[] getData() {
-		byte[] data = new byte[MAX_BLOCK_SIZE];
+		byte[] data = new byte[BYTE_COUNT];
 
 		arraycopy(keyA, 0, data, 0, keyA.length);
 		arraycopy(accessBytes, 0, data, 6, accessBytes.length);

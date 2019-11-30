@@ -7,7 +7,9 @@ import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class Card {
 
-	public static final int MAX_CARD_SIZE = 16;
+	public static final int SECTOR_COUNT = 16;
+
+	public static final int TAG_ID_SIZE = 5;
 
 	private final byte[] tagId;
 
@@ -26,7 +28,7 @@ public class Card {
 	}
 
 	public Sector getSector(int sectorNumber) {
-		if (sectorNumber < 0 || sectorNumber >= MAX_CARD_SIZE) {
+		if (sectorNumber < 0 || sectorNumber >= SECTOR_COUNT) {
 			throw new RuntimeException("Given sector number is out of range! (" + sectorNumber + ")");
 		}
 
@@ -65,7 +67,7 @@ public class Card {
 	}
 
 	public void recalculateAccessModes() {
-		for (int sectorIndex = 0; sectorIndex < MAX_CARD_SIZE; sectorIndex++) {
+		for (int sectorIndex = 0; sectorIndex < SECTOR_COUNT; sectorIndex++) {
 			Sector sector = getSector(sectorIndex);
 
 			if (sector != null) {

@@ -31,7 +31,7 @@ public class CardUtil {
 	}
 
 	public static byte getFullAddress(int sectorIndex, int blockIndex) {
-		return (byte) (sectorIndex * Sector.MAX_SECTOR_SIZE + blockIndex);
+		return (byte) (sectorIndex * Sector.BLOCK_COUNT + blockIndex);
 	}
 
 	public static BlockAccessMode getBlockAccessMode(Block dataBlock, byte[] accessBytes) {

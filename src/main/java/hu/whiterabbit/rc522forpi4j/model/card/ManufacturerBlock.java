@@ -51,7 +51,7 @@ public class ManufacturerBlock implements Block {
 
 	@Override
 	public byte[] getData() {
-		byte[] data = new byte[MAX_BLOCK_SIZE];
+		byte[] data = new byte[BYTE_COUNT];
 
 		arraycopy(uid, 0, data, 0, uid.length);
 		arraycopy(manufacturerData, 0, data, 7, manufacturerData.length);
