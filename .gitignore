@@ -18,3 +18,6 @@
 
 # Idea specific files
 .idea
+
+# Build specific files
+/build/

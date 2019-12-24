@@ -7,11 +7,11 @@ buildscript {
     }
 }
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 group 'hu.whiterabbit'
-version '0.0.1'
+version '0.1.0'
 
 sourceCompatibility = 1.8
 
@@ -58,8 +58,13 @@ dependencies {
 
 jar {
     manifest {
-        attributes('Main-Class': 'hu.whiterabbit.rc522forpi4j.example.' + (project.hasProperty('exampleClass') ? project.exampleClass : defaultExampleClass))
+        attributes('Implementation-Title': project.name, 'Implementation-Version': project.version)
     }
+
+}
+
+tasks.withType(Jar) {
+    destinationDir = file("$rootDir/releases/")
 }
 
 shadowJar {
