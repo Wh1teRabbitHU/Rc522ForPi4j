@@ -32,7 +32,7 @@ ext {
     logbackVersion = "1.2.3"
 
     // Test
-    junitVersion = "4.12"
+    junitVersion = "5.3.1"
 
     defaultExampleClass = "ReadData"
 }
@@ -50,10 +50,16 @@ dependencies {
             "org.slf4j:jcl-over-slf4j:${slf4jVersion}",
             "ch.qos.logback:logback-classic:${logbackVersion}"
     )
-    testCompile(
-            // Junit
-            "junit:junit:${junitVersion}",
+    testImplementation(
+            "org.mockito:mockito-core:2.21.0",
+            "org.mockito:mockito-junit-jupiter:2.23.0",
+            "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
     )
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+}
+
+test {
+    useJUnitPlatform()
 }
 
 jar {
