@@ -21,3 +21,6 @@
 
 # Build specific files
 /build/
+
+# Excluding release
+!/releases/*.jar
