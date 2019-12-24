@@ -20,6 +20,7 @@ import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_T
 import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.PICC_AUTHENT1A;
 import static hu.whiterabbit.rc522forpi4j.rc522.RC522CommandTable.PICC_AUTHENT1B;
 import static hu.whiterabbit.rc522forpi4j.util.CardUtil.getFullAddress;
+import static hu.whiterabbit.rc522forpi4j.util.CardUtil.getReadStatus;
 
 public class RC522ClientImpl implements RC522Client {
 
@@ -100,9 +101,9 @@ public class RC522ClientImpl implements RC522Client {
 
 		for (int sectorIndex = 0; sectorIndex < Card.SECTOR_COUNT; sectorIndex++) {
 			for (int blockIndex = 0; blockIndex < Sector.BLOCK_COUNT; blockIndex++) {
-				byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, cardAuthKey.getBlockAuthKey(sectorIndex, blockIndex));
+				CommunicationResult result = authAndReadData(sectorIndex, blockIndex, tagId, cardAuthKey.getBlockAuthKey(sectorIndex, blockIndex));
 
-				card.addBlock(sectorIndex, blockIndex, data);
+				card.addBlock(sectorIndex, blockIndex, result.getData(), getReadStatus(result));
 			}
 		}
 
@@ -146,9 +147,9 @@ public class RC522ClientImpl implements RC522Client {
 		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
 		for (int blockIndex = 0; blockIndex < Sector.BLOCK_COUNT; blockIndex++) {
-			byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, sectorAuthKey.getBlockAuthKey(blockIndex));
+			CommunicationResult result = authAndReadData(sectorIndex, blockIndex, tagId, sectorAuthKey.getBlockAuthKey(blockIndex));
 
-			sector.addBlock(blockIndex, data);
+			sector.addBlock(blockIndex, result.getData(), getReadStatus(result));
 		}
 
 		sector.recalculateAccessModes();
@@ -193,21 +194,21 @@ public class RC522ClientImpl implements RC522Client {
 
 		Block block;
 		SectorTrailerBlock sectorTrailerBlock;
-		byte[] data = authAndReadData(sectorIndex, blockIndex, tagId, blockAuthKey);
+		CommunicationResult result = authAndReadData(sectorIndex, blockIndex, tagId, blockAuthKey);
 
 		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
-			block = new SectorTrailerBlock(data);
-			sectorTrailerBlock = new SectorTrailerBlock(data);
+			block = new SectorTrailerBlock(result.getData(), getReadStatus(result));
+			sectorTrailerBlock = new SectorTrailerBlock(result.getData(), getReadStatus(result));
 		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && sectorIndex == MANUFACTURER_SECTOR_INDEX) {
-			block = new ManufacturerBlock(data);
+			block = new ManufacturerBlock(result.getData(), getReadStatus(result));
 
-			byte[] sectorTrailerData = authAndReadData(sectorIndex, SECTOR_TRAILER_BLOCK_INDEX, tagId, blockAuthKey);
-			sectorTrailerBlock = new SectorTrailerBlock(sectorTrailerData);
+			CommunicationResult sectorTrailerResult = authAndReadData(sectorIndex, SECTOR_TRAILER_BLOCK_INDEX, tagId, blockAuthKey);
+			sectorTrailerBlock = new SectorTrailerBlock(sectorTrailerResult.getData(), getReadStatus(sectorTrailerResult));
 		} else {
-			block = new DataBlock(blockIndex, data);
+			block = new DataBlock(blockIndex, result.getData(), getReadStatus(result));
 
-			byte[] sectorTrailerData = authAndReadData(sectorIndex, SECTOR_TRAILER_BLOCK_INDEX, tagId, blockAuthKey);
-			sectorTrailerBlock = new SectorTrailerBlock(sectorTrailerData);
+			CommunicationResult sectorTrailerResult = authAndReadData(sectorIndex, SECTOR_TRAILER_BLOCK_INDEX, tagId, blockAuthKey);
+			sectorTrailerBlock = new SectorTrailerBlock(sectorTrailerResult.getData(), getReadStatus(sectorTrailerResult));
 		}
 
 		block.updateAccessMode(sectorTrailerBlock);
@@ -217,7 +218,7 @@ public class RC522ClientImpl implements RC522Client {
 		return block;
 	}
 
-	private byte[] authAndReadData(int sectorIndex, int blockIndex, byte[] tagId, BlockAuthKey blockAuthKey) {
+	private CommunicationResult authAndReadData(int sectorIndex, int blockIndex, byte[] tagId, BlockAuthKey blockAuthKey) {
 		byte fullAddress = getFullAddress(sectorIndex, blockIndex);
 		CommunicationResult result = auth(fullAddress, tagId, blockAuthKey);
 
@@ -225,7 +226,7 @@ public class RC522ClientImpl implements RC522Client {
 			return readData(fullAddress);
 		}
 
-		return null;
+		return result;
 	}
 
 	private CommunicationResult auth(byte blockAddress, byte[] tagId, BlockAuthKey blockAuthKey) {
@@ -249,20 +250,14 @@ public class RC522ClientImpl implements RC522Client {
 		if (result.isSuccess()) {
 			logger.debug("Successfully authenticated!");
 		} else {
-			logger.error("Authentication error");
+			logger.debug("Authentication error");
 		}
 
 		return result;
 	}
 
-	private byte[] readData(byte blockAddress) {
-		CommunicationResult result = rc522.read(blockAddress);
-
-		if (!result.isSuccess()) {
-			return null;
-		}
-
-		return result.getData();
+	private CommunicationResult readData(byte blockAddress) {
+		return rc522.read(blockAddress);
 	}
 
 }

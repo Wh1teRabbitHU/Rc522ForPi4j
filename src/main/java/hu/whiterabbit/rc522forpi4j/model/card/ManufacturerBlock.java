@@ -16,11 +16,14 @@ public class ManufacturerBlock implements Block {
 
 	private final byte[] manufacturerData;
 
+	private BlockReadStatus readStatus;
+
 	private BlockAccessMode accessMode;
 
-	public ManufacturerBlock(byte[] data) {
+	public ManufacturerBlock(byte[] data, BlockReadStatus readStatus) {
 		this.uid = getByteRange(data, 0, 7);
 		this.manufacturerData = getByteRange(data, 7, 9);
+		this.readStatus = readStatus;
 	}
 
 	public byte[] getUid() {
@@ -29,6 +32,11 @@ public class ManufacturerBlock implements Block {
 
 	public byte[] getManufacturerData() {
 		return manufacturerData;
+	}
+
+	@Override
+	public BlockReadStatus getReadStatus() {
+		return readStatus;
 	}
 
 	@Override
@@ -69,6 +77,7 @@ public class ManufacturerBlock implements Block {
 		return "\tBlock (0) " + blockTypeToString(getBlockType()) +
 				"\tuid=" + bytesToHex(uid) +
 				", manufacturerData=" + bytesToHex(manufacturerData) +
-				"\t\t\t" + getAccessMode().toString();
+				"\t\t\t" + getAccessMode().toString() +
+				"\t Read result: " + getReadStatus();
 	}
 }

@@ -15,9 +15,11 @@ public class DataBlock implements Block {
 
 	private BlockType blockType;
 
+	private BlockReadStatus readStatus;
+
 	private BlockAccessMode accessMode;
 
-	public DataBlock(int index, byte[] data) {
+	public DataBlock(int index, byte[] data, BlockReadStatus readStatus) {
 		if (index < 0 || index >= BLOCK_COUNT) {
 			throw new RuntimeException("Given block index is out of range! (" + index + ")");
 		} else if (data != null && data.length > BYTE_COUNT) {
@@ -26,8 +28,9 @@ public class DataBlock implements Block {
 		}
 
 		this.index = index;
+		this.readStatus = readStatus;
 
-		if (data == null) {
+		if (data == null || readStatus != BlockReadStatus.SUCCESS) {
 			this.data = new byte[BYTE_COUNT];
 		} else {
 			this.data = data;
@@ -76,6 +79,11 @@ public class DataBlock implements Block {
 		this.blockType = blockType;
 	}
 
+	@Override
+	public BlockReadStatus getReadStatus() {
+		return readStatus;
+	}
+
 	public BlockAccessMode getAccessMode() {
 		return accessMode;
 	}
@@ -90,6 +98,7 @@ public class DataBlock implements Block {
 
 		return "\tBlock (" + getIndex() + ") " + blockTypeToString(getBlockType()) +
 				"\t" + getDataAsHex() +
-				"\t\t" + accessModeString;
+				"\t\t" + accessModeString +
+				"\t Read result: " + getReadStatus();
 	}
 }

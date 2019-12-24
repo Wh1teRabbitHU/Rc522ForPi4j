@@ -1,9 +1,7 @@
 package hu.whiterabbit.rc522forpi4j.util;
 
-import hu.whiterabbit.rc522forpi4j.model.card.Block;
-import hu.whiterabbit.rc522forpi4j.model.card.BlockAccessMode;
-import hu.whiterabbit.rc522forpi4j.model.card.BlockType;
-import hu.whiterabbit.rc522forpi4j.model.card.Sector;
+import hu.whiterabbit.rc522forpi4j.model.card.*;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
 
 import static hu.whiterabbit.rc522forpi4j.util.AccessModeBit.*;
 
@@ -46,6 +44,24 @@ public class CardUtil {
 		blockAccessMode.setC3(C3);
 
 		return blockAccessMode;
+	}
+
+	public static BlockReadStatus getReadStatus(CommunicationResult result) {
+		if (result == null || result.getStatus() == null) {
+			return null;
+		}
+
+		switch (result.getStatus()) {
+			case SUCCESS:
+				return BlockReadStatus.SUCCESS;
+			case AUTH_ERROR:
+				return BlockReadStatus.AUTH_ERROR;
+			case NO_TAG:
+			case ERROR:
+				return BlockReadStatus.ERROR;
+			default:
+				throw new RuntimeException("Unknown CommunicationStatus: " + result.getStatus().toString());
+		}
 	}
 
 	private static int getAccessBit(byte[] accessBytes, int blockIndex, int bitIndex, boolean isNegated) {

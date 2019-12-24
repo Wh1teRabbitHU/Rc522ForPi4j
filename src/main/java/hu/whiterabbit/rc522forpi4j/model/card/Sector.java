@@ -70,13 +70,13 @@ public class Sector {
 		dataBlocks.add(dataBlock);
 	}
 
-	public void addBlock(int blockIndex, byte[] byteData) {
+	public void addBlock(int blockIndex, byte[] byteData, BlockReadStatus readStatus) {
 		if (blockIndex == SECTOR_TRAILER_BLOCK_INDEX) {
-			this.setSectorTrailerBlock(new SectorTrailerBlock(byteData));
+			this.setSectorTrailerBlock(new SectorTrailerBlock(byteData, readStatus));
 		} else if (blockIndex == MANUFACTURER_BLOCK_INDEX && this.index == MANUFACTURER_SECTOR_INDEX) {
-			this.setManufacturerBlock(new ManufacturerBlock(byteData));
+			this.setManufacturerBlock(new ManufacturerBlock(byteData, readStatus));
 		} else {
-			this.addBlock(new DataBlock(blockIndex, byteData));
+			this.addBlock(new DataBlock(blockIndex, byteData, readStatus));
 		}
 	}
 

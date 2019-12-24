@@ -12,6 +12,8 @@ public interface Block {
 
 	BlockAccessMode getAccessMode();
 
+	BlockReadStatus getReadStatus();
+
 	void updateAccessMode(SectorTrailerBlock sectorTrailerBlock);
 
 }

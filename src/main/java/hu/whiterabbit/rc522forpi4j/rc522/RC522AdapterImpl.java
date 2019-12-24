@@ -110,7 +110,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 		CommunicationResult result = writeCard(PCD_AUTHENT, data);
 
 		if ((readRC522(STATUS_2_REG) & 0x08) == 0) {
-			result.setStatus(CommunicationStatus.ERROR);
+			result.setStatus(CommunicationStatus.AUTH_ERROR);
 		}
 
 		return result;

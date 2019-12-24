@@ -17,17 +17,25 @@ public class SectorTrailerBlock implements Block {
 
 	private byte dataByte;
 
+	private BlockReadStatus readStatus;
+
 	private BlockAccessMode accessMode;
 
-	public SectorTrailerBlock(byte[] data) {
-		if (data == null) {
+	public SectorTrailerBlock(byte[] data, BlockReadStatus readStatus) {
+		if (data == null || readStatus != BlockReadStatus.SUCCESS) {
 			data = new byte[BYTE_COUNT];
 		}
 
+		this.readStatus = readStatus;
 		this.keyA = getByteRange(data, 0, 6);
 		this.accessBytes = getByteRange(data, 6, 3);
 		this.dataByte = data[9];
 		this.keyB = getByteRange(data, 10, 6);
+	}
+
+	@Override
+	public BlockReadStatus getReadStatus() {
+		return readStatus;
 	}
 
 	public byte[] getKeyA() {
@@ -104,7 +112,8 @@ public class SectorTrailerBlock implements Block {
 				", keyB=" + bytesToHex(keyB) +
 				", accessBytes=" + bytesToHex(accessBytes) +
 				", dataByte=" + byteToHex(dataByte) +
-				"\t" + getAccessMode().toString();
+				"\t" + getAccessMode().toString() +
+				"\t Read result: " + getReadStatus();
 	}
 
 }

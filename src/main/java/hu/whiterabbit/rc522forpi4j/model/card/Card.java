@@ -54,7 +54,7 @@ public class Card {
 		sectors.add(sector);
 	}
 
-	public void addBlock(int sectorIndex, int blockIndex, byte[] byteData) {
+	public void addBlock(int sectorIndex, int blockIndex, byte[] byteData, BlockReadStatus readStatus) {
 		Sector sector = getSector(sectorIndex);
 
 		if (sector == null) {
@@ -63,7 +63,7 @@ public class Card {
 			addSector(sector);
 		}
 
-		sector.addBlock(blockIndex, byteData);
+		sector.addBlock(blockIndex, byteData, readStatus);
 	}
 
 	public void recalculateAccessModes() {
