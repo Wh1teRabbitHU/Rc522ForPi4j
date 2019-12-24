@@ -64,7 +64,11 @@ test {
 
 jar {
     manifest {
-        attributes('Implementation-Title': project.name, 'Implementation-Version': project.version)
+        attributes(
+                'Main-Class': 'hu.whiterabbit.rc522forpi4j.example.' + (project.hasProperty('exampleClass') ? project.exampleClass : defaultExampleClass),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
     }
 
 }
