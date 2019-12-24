@@ -3,6 +3,7 @@ package hu.whiterabbit.rc522forpi4j.example;
 import hu.whiterabbit.rc522forpi4j.model.card.Block;
 import hu.whiterabbit.rc522forpi4j.model.card.Card;
 import hu.whiterabbit.rc522forpi4j.model.card.Sector;
+import hu.whiterabbit.rc522forpi4j.rc522.RC522Client;
 import hu.whiterabbit.rc522forpi4j.rc522.RC522ClientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ public class ReadData {
 	private static final Logger logger = LoggerFactory.getLogger(ReadData.class);
 
 	public static void main(String[] args) {
-		final RC522ClientImpl rc522Client = new RC522ClientImpl();
+		final RC522Client rc522Client = RC522ClientImpl.createInstance();
 
 		logger.info("Starting to read data");
 

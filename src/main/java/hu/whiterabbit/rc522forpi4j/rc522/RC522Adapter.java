@@ -4,6 +4,8 @@ import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
 
 public interface RC522Adapter {
 
+	void init(int speed, int resetPin, int spiChannel);
+
 	void reset();
 
 	CommunicationResult selectCard();

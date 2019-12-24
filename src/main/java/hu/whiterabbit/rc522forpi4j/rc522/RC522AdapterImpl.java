@@ -17,17 +17,22 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(RC522AdapterImpl.class);
 
-	private static final RaspberryPiAdapter RASPBERRY_PI_ADAPTER = new RaspberryPiAdapter();
-
 	private static final int MIN_SPEED = 500000;
 
 	private static final int MAX_SPEED = 32000000;
 
 	private static final int MAX_LEN = 16;
 
-	private final int spiChannel;
+	private final RaspberryPiAdapter raspberryPiAdapter;
 
-	public RC522AdapterImpl(int speed, int resetPin, int spiChannel) {
+	private int spiChannel;
+
+	public RC522AdapterImpl(RaspberryPiAdapter raspberryPiAdapter) {
+		this.raspberryPiAdapter = raspberryPiAdapter;
+	}
+
+	@Override
+	public void init(int speed, int resetPin, int spiChannel) {
 		this.spiChannel = spiChannel;
 
 		if (speed < MIN_SPEED || speed > MAX_SPEED) {
@@ -36,7 +41,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 			return;
 		}
 
-		RASPBERRY_PI_ADAPTER.initRaspberry(spiChannel, speed, resetPin);
+		raspberryPiAdapter.init(spiChannel, speed, resetPin);
 
 		reset();
 	}
@@ -242,7 +247,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 		data[0] = (byte) ((address << 1) & 0x7E);
 		data[1] = value;
 
-		int responseCode = RASPBERRY_PI_ADAPTER.wiringPiSPIDataRW(spiChannel, data);
+		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(spiChannel, data);
 		if (responseCode == -1) {
 			logger.error("Device SPI write error, address={}, value={}", address, value);
 		}
@@ -253,7 +258,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		data[0] = (byte) (((address << 1) & 0x7E) | 0x80);
 
-		int responseCode = RASPBERRY_PI_ADAPTER.wiringPiSPIDataRW(spiChannel, data);
+		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(spiChannel, data);
 		if (responseCode == -1) {
 			logger.error("Device SPI read error, address={}", address);
 		}

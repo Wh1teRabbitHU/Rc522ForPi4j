@@ -5,6 +5,8 @@ import hu.whiterabbit.rc522forpi4j.model.auth.CardAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.auth.SectorAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.card.*;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
+import hu.whiterabbit.rc522forpi4j.raspberry.RaspberryPiAdapter;
+import hu.whiterabbit.rc522forpi4j.raspberry.RaspberryPiAdapterImpl;
 import hu.whiterabbit.rc522forpi4j.util.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +31,25 @@ public class RC522ClientImpl implements RC522Client {
 
 	private static final int SPI_CHANNEL = 0;
 
-	private static final RC522Adapter rc522 = new RC522AdapterImpl(SPEED, RESET_PIN, SPI_CHANNEL);
+	private final RC522Adapter rc522;
+
+	public RC522ClientImpl(RC522Adapter rc522) {
+		this.rc522 = rc522;
+	}
+
+	public static RC522Client createInstance() {
+		final RaspberryPiAdapter piAdapter = new RaspberryPiAdapterImpl();
+		final RC522Adapter rc522Adapter = new RC522AdapterImpl(piAdapter);
+		final RC522Client rc522Client = new RC522ClientImpl(rc522Adapter);
+
+		rc522Client.init();
+
+		return rc522Client;
+	}
+
+	public void init() {
+		rc522.init(SPEED, RESET_PIN, SPI_CHANNEL);
+	}
 
 	/**
 	 * Select one of your card and read its tagId. If the selection has error or no rad is present then it will return

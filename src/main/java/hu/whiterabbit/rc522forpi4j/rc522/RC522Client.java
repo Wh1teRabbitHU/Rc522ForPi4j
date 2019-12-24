@@ -9,6 +9,8 @@ import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 
 public interface RC522Client {
 
+	void init();
+
 	byte[] readCardTag();
 
 	Card readCardData();
