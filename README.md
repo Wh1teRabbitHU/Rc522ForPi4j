@@ -6,20 +6,68 @@
   - [Table of content](#table-of-content)
   - [Introduction](#introduction)
   - [Usage](#usage)
+  - [Example](#example)
   - [Files](#files)
     - [RC522 package](#rc522-package)
     - [Model package - Auth](#model-package---auth)
     - [Model package - Card](#model-package---card)
     - [Model package - Communication](#model-package---communication)
     - [Raspberry package](#raspberry-package)
+    - [RC522 package](#rc522-package-1)
+    - [Util package](#util-package)
 
 ## Introduction
 
-It's a java based library implementation for the RC522 RFID module using Pi4j on Raspberry Pi. Currently only read functions are implemented.
+It's a java based implementation for the RC522 RFID module using Pi4j on Raspberry Pi. The original code has been made in python and then someone converted it into C and now finally I created the Java version! Not only converting, but extending the original library with more, easy to use features and models. The target java version is 8, because the raspbian distros default java version is also 8 at the moment.
+Currently only read functions are implemented.
 
 ## Usage
 
-You should include the library jar file from the releases folder in your pi4j project. This library only works with that library at the moment. The source code only needed if you want to extend or replace the implementations with your own.
+You should include the library jar file from the releases folder in your pi4j project. This library works with that library by default, but you can replace the ```RaspberryPiAdapterImpl``` class with your own solution, so it's not tied to that library! The recommended entry point is the ```RC522ClientImpl```. You should create an instance of this class using the static instance generator method, (```RC522ClientImpl.createInstance()```) which will take care of the dependencies and the initializations for you! Every adapter and client class has an interface, so you can replace any part of this library using dependency injection or making your own instance generator method. Beware, you should call the init methods in the adapter class, otherwise it won't work at all!
+
+## Example
+
+The library has some example classes which can be used to start creating your own implementation. You can find these classes under the ```hu.whiterabbit.rc522forpi4j.example``` package. You can also generate these example codes into runnable jars using the shadowJar gradle plugin: (the ```exampleClass``` parameter is determining the entry point for your jar file, default value: 'ReadData')
+
+```bash
+./gradlew shadowJar -PexampleClass=WriteExample
+```
+
+The most basic implementation for reading the whole card data:
+
+```java
+public class TestClass {
+
+    // Some basic logger instance. You can use anything instead of this
+    private static final Logger logger = LoggerFactory.getLogger(TestClass.class);
+
+    // The main entry point for the command line application
+	public static void main(String[] args) {
+
+        // Creating a RC522Client instance using the static instance generator method
+        final RC522Client rc522Client = RC522ClientImpl.createInstance();
+
+        try {
+            // Search for card
+            while (true) {
+                // Reading card data using the client
+                Card card = rc522Client.readCardData();
+
+                // If card is present, print it's content into the log
+                if (card != null) {
+                    logger.info("Card data: \n{}", card);
+
+                    Thread.sleep(2000);
+                }
+
+                Thread.sleep(10);
+            }
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+}
+```
 
 ## Files
 
@@ -65,4 +113,19 @@ You should include the library jar file from the releases folder in your pi4j pr
 
 ### Raspberry package
 
-- ```RaspberryPiAdapter```: A lightweight adapter for the raspberry SPI communication. By default it's using the Pi4J spi library to communicate with the reader, but you can replace this adapter with your own implementation if needed! Also it helps with mocking in unit tests.
+- ```RaspberryPiAdapter```: A lightweight adapter for the raspberry SPI communication. By default it's using the Pi4J spi library to communicate with the RC522 reader, but you can replace this adapter with your own implementation if needed! Also it helps with mocking in unit tests.
+- ```RaspberryPiAdapterImpl```: The default implementation of the ```RaspberryPiAdapter``` interface. This class is using the Pi4J library to communicate with the RC522 reader. The main purpose of this class is to implement a more general solution for handling the SPI communication itself.
+
+### RC522 package
+
+- ```RC522Adapter```: This is the low level adapter used to communicate with the RC522 unit with the help of the RaspberryPiAdapter. It send and request raw data to/from the RC522 module via SPI interface. The ```CommunicationResult``` class contains the result of certain actions which involves communication between the raspberry pi and the RC522 reader.
+- ```RC522AdapterImpl```: The default implementation of the ```RC522Adapter``` interface. It handles all the low level communications between the raspberry pi and the RC522 reader. The difference between this class and the ```RaspberryPiAdapter``` implementation is that the RC522Adapter is a more specific, RC522 related codebase and the RaspberryPiAdapter has more general methods, mostly handling the SPI communication itself. You can use this implementation directly to handle all the card related communications, but it's much easier to use the high level and more detailed ```RC522Client``` instead.
+- ```RC522Client```: A high level, easy to use interface to handle all the necessary card related communications. This interface and it's implementation should be your entry point to this library.
+- ```RC522ClientImpl```: A default implementation for the ```RC522Client``` interface. This is the highest level entry point to this library. It has a list of methods which can be used to handle all the necessary card related communications. It's strongly adviced to use the ```RC522ClientImpl.createInstance()``` for creating a new instance of this client, because it creates and initialize the required adapters.
+- ```RC522CommandTable```: This class contains the low level instruction set of the RC522 module. You don't need to use it directly if you use the ```RC522ClientImpl``` as entry point, because that implementation will take care of all the low level communications. I tried to solve all the available commands using the publicly available documentations, but some of the features may differ.
+
+### Util package
+
+- ```AccessModeBit```: This is the logical representation of the sector trailer block's access bytes. This enum only used to convert the access mode data between the binary format and the ```BlockAccessMode``` class.
+- ```CardUtil```: Card related util methods. It helps to transform and process the card data. (access mode or displaying card related data)
+- ```DataUtil```: Data and value related util methods. It helps to convert between the different data types. (bit to bytes, bytes to hex, etc)

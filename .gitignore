@@ -15,9 +15,16 @@
 
 # Gradle specific files
 .gradle
+!gradle-wrapper.jar
 
 # Idea specific files
 .idea
+
+# VS Code specific files
+.classpath
+.project
+.settings/
+/bin/
 
 # Build specific files
 /build/
