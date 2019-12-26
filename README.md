@@ -7,6 +7,7 @@
   - [Introduction](#introduction)
   - [Usage](#usage)
   - [Example](#example)
+  - [Structure of a MIFARE 1K card](#structure-of-a-mifare-1k-card)
   - [Classes](#classes)
     - [Model package - Auth](#model-package---auth)
     - [Model package - Card](#model-package---card)
@@ -67,6 +68,30 @@ public class TestClass {
     }
 }
 ```
+
+## Structure of a MIFARE 1K card
+
+The 1024 × 8 bit EEPROM memory is organized in 16 sectors of 4 blocks. One block contains 16 bytes. 4 different types of codes are exist:
+
+- Sector trailer block: This is a special block type, this block stores all the sector related security informations and keys. The library take care of this block type, so you don't need to manualy read, interpret and update these bytes! The structure of a sector trailer block is the following:
+  - 0-5 bytes contains the security Key A. (It's not readable, only writeable when the access bytes allows it)
+  - 6-8 bytes are the access bytes for the whole sector. It has a redundant format, it also stores every value in inverted format. It determines the access modes for all 4 blocks in the sector, including the sector trailer block itself! Available levels: (read, write, read/write using Key A, Key B or Key A/B)
+  - 9th byte is a data byte, you can store anything in it.
+  - 10-15 bytes contains the security Key B. This key is readable/writable if the access bytes allows it.
+- Manufacturer's block: A special type of block, every card's first sector's first block is a manufacturer block. It contains the card ID and the manufacturer's ID. It has two formats:
+  - The first one has a 4 bit long (0-3) so called NUID and a 12 block long (4-15) manufacturer's ID.
+  - The second one has a 7 bit (0-6) UID and a 9 bit (7-15) manufacturer's ID.
+- Data block: The most basic type of block. It stores your data and can be readed if you authenticated with the corresponding auth key. The full block area can be used to store your data and the authorization config stored in the sector trailer block. A data block can store 16 bytes of data.
+- Value block: A value block has some special functions: increment, decrement, restore, transfer. You can create a digital wallet using this type of blocks. This block has a strict byte format, which must be followed:
+  - 0-3 bytes contains the value
+  - 4-7 bytes has the same value, but in inverted form
+  - 8-11 bytes contains the same value as the 0-3 bytes. This redundancy helps with error checking.
+  - 12th byte contains an address of a block. (It can be used to implement a powerful backup management)
+  - 13th byte is the inversed value of the 12th byte.
+  - 14th byte is the same as the 12th. This redundancy helps with error checking.
+  - 15th byte is the same as the 13th. This redundancy helps with error checking.
+
+Every block must be authenticated separately and you can use different authentication keys for every block. For this you have to properly configure the sector trailers block, otherwise you cannot access the corresponding block anymore! If you try to determine the value of a block manualy and make a mistake during the process, then there is no way to access or fix your block, so be cautious!
 
 ## Classes
 
