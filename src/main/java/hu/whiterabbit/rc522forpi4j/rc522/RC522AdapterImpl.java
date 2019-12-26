@@ -25,16 +25,20 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 	private final RaspberryPiAdapter raspberryPiAdapter;
 
-	private int spiChannel;
-
 	public RC522AdapterImpl(RaspberryPiAdapter raspberryPiAdapter) {
 		this.raspberryPiAdapter = raspberryPiAdapter;
 	}
 
+	/**
+	 * Initializing the RC522Adapter. It creates and initialize the raspberryPiAdapter instance and resets the RC522
+	 * module to it's default state
+	 *
+	 * @param speed      Speed of the communication
+	 * @param resetPin   The connected reset pin's number
+	 * @param spiChannel The channel number used for SPI communication
+	 */
 	@Override
 	public void init(int speed, int resetPin, int spiChannel) {
-		this.spiChannel = spiChannel;
-
 		if (speed < MIN_SPEED || speed > MAX_SPEED) {
 			logger.error("Speed out of range: {}. It should be between {} and {}", speed, MIN_SPEED, MAX_SPEED);
 
@@ -47,7 +51,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 	}
 
 	/**
-	 * Resets your RC522 module
+	 * Resets your RC522 module to it's default state
 	 */
 	@Override
 	public void reset() {
@@ -249,7 +253,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 		data[0] = (byte) ((address << 1) & 0x7E);
 		data[1] = value;
 
-		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(spiChannel, data);
+		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(data);
 		if (responseCode == -1) {
 			logger.error("Device SPI write error, address={}, value={}", address, value);
 		}
@@ -260,7 +264,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		data[0] = (byte) (((address << 1) & 0x7E) | 0x80);
 
-		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(spiChannel, data);
+		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(data);
 		if (responseCode == -1) {
 			logger.error("Device SPI read error, address={}", address);
 		}

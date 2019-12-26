@@ -7,7 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -31,7 +32,7 @@ public class RC522AdapterImplTest {
 		rc522Adapter.init(SPEED, RESET_PIN, SPI_CHANNEL);
 
 		verify(piAdapter, times(1)).init(eq(SPI_CHANNEL), eq(SPEED), eq(RESET_PIN));
-		verify(piAdapter, times(10)).wiringPiSPIDataRW(anyInt(), any());
+		verify(piAdapter, times(10)).wiringPiSPIDataRW(any());
 	}
 
 }

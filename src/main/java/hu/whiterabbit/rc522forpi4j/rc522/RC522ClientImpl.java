@@ -49,6 +49,10 @@ public class RC522ClientImpl implements RC522Client {
 		return rc522Client;
 	}
 
+	/**
+	 * Initializing the raspberryPi and RC522 adapters
+	 */
+	@Override
 	public void init() {
 		rc522.init(SPEED, RESET_PIN, SPI_CHANNEL);
 	}

@@ -16,6 +16,12 @@ public class CardUtil {
 	private CardUtil() {
 	}
 
+	/**
+	 * It will convert your block type into a readable string. This method used to print card data to the console
+	 *
+	 * @param blockType Type of the block
+	 * @return The formatted string
+	 */
 	public static String blockTypeToString(BlockType blockType) {
 		if (blockType == null) {
 			return "[???]";
@@ -28,10 +34,24 @@ public class CardUtil {
 		return "[" + blockType + "]" + new String(new char[extraSpaceNeeded]).replace("\0", " ");
 	}
 
+	/**
+	 * Converts the logical address to the full, block based address
+	 *
+	 * @param sectorIndex Index of the sector
+	 * @param blockIndex  Index of the block within the sector
+	 * @return The block's global address
+	 */
 	public static byte getFullAddress(int sectorIndex, int blockIndex) {
 		return (byte) (sectorIndex * Sector.BLOCK_COUNT + blockIndex);
 	}
 
+	/**
+	 * It calculates the access mode for a given block using the access bytes
+	 *
+	 * @param dataBlock   Target block instance
+	 * @param accessBytes Accessbytes from the sector trailer block
+	 * @return The calculated access mode
+	 */
 	public static BlockAccessMode getBlockAccessMode(Block dataBlock, byte[] accessBytes) {
 		BlockAccessMode blockAccessMode = new BlockAccessMode();
 
@@ -46,6 +66,12 @@ public class CardUtil {
 		return blockAccessMode;
 	}
 
+	/**
+	 * Simple enum conversion between the CommunicationResult and BlockReadStatus
+	 *
+	 * @param result source CommunicationResult instance
+	 * @return The converted BlockReadStatus instance
+	 */
 	public static BlockReadStatus getReadStatus(CommunicationResult result) {
 		if (result == null || result.getStatus() == null) {
 			return null;
