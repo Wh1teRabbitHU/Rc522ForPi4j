@@ -11,6 +11,8 @@ public interface RC522Client {
 
 	void init();
 
+	boolean hasCard();
+
 	byte[] readCardTag();
 
 	Card readCardData();

@@ -234,7 +234,9 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		CommunicationResult result = writeCard(CONTROL_REG, tagType);
 
-		if (!result.isSuccess() || result.getBits() != 0x10) {
+		if (!result.isSuccess()) {
+			result.setStatus(CommunicationStatus.NO_TAG);
+		} else if (result.getBits() != 0x10) {
 			result.setStatus(CommunicationStatus.ERROR);
 		}
 

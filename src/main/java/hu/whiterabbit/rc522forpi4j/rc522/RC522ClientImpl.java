@@ -5,6 +5,7 @@ import hu.whiterabbit.rc522forpi4j.model.auth.CardAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.auth.SectorAuthKey;
 import hu.whiterabbit.rc522forpi4j.model.card.*;
 import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationResult;
+import hu.whiterabbit.rc522forpi4j.model.communication.CommunicationStatus;
 import hu.whiterabbit.rc522forpi4j.raspberry.RaspberryPiAdapter;
 import hu.whiterabbit.rc522forpi4j.raspberry.RaspberryPiAdapterImpl;
 import hu.whiterabbit.rc522forpi4j.util.DataUtil;
@@ -50,6 +51,19 @@ public class RC522ClientImpl implements RC522Client {
 
 	public void init() {
 		rc522.init(SPEED, RESET_PIN, SPI_CHANNEL);
+	}
+
+	/**
+	 * This method checks for nearby cards. If no cards detected, it returns false otherwise, if a card is present,
+	 * then returns true. Important: This method will returns true when the card is present, but it's not readable!
+	 *
+	 * @return Has any card near to the reader?
+	 */
+	@Override
+	public boolean hasCard() {
+		CommunicationResult readResult = rc522.selectCard();
+
+		return readResult.getStatus() != CommunicationStatus.NO_TAG;
 	}
 
 	/**
