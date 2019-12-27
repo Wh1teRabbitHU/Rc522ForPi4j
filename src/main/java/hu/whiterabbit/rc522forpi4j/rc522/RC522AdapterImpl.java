@@ -250,7 +250,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 	private void writeRC522(byte address, byte value) {
 		byte[] data = new byte[2];
 
-		data[0] = (byte) ((address << 1) & 0x7E);
+		data[0] = formatAddress(false, address);
 		data[1] = value;
 
 		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(data);
@@ -262,7 +262,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 	private byte readRC522(byte address) {
 		byte[] data = new byte[2];
 
-		data[0] = (byte) (((address << 1) & 0x7E) | 0x80);
+		data[0] = formatAddress(true, address);
 
 		int responseCode = raspberryPiAdapter.wiringPiSPIDataRW(data);
 		if (responseCode == -1) {
@@ -401,6 +401,23 @@ public class RC522AdapterImpl implements RC522Adapter {
 		result.setStatus(CommunicationStatus.ERROR);
 
 		return result;
+	}
+
+	/**
+	 * The address has a special format:
+	 * positions:	7					6	5	4	3	2	1	0
+	 * values:		1/0 (read/write)	6-1 address bits		0
+	 *
+	 * @param read    Read or write?
+	 * @param address The original address
+	 * @return The formatted address
+	 */
+	private byte formatAddress(boolean read, byte address) {
+		if (read) {
+			return (byte) (((address << 1) & 0x7E) | 0x80);
+		} else {
+			return (byte) ((address << 1) & 0x7E);
+		}
 	}
 
 }
