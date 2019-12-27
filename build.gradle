@@ -1,0 +1,88 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
+apply plugin: 'java-library'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+group 'hu.whiterabbit'
+version '0.1.0'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url "https://oss.sonatype.org/content/groups/public"
+    }
+}
+
+ext {
+    // Raspberry pi
+    pi4jVersion = "1.2-SNAPSHOT"
+
+    // Logging
+    slf4jVersion = "1.7.25"
+    logbackVersion = "1.2.3"
+
+    // Test
+    junitVersion = "5.3.1"
+
+    defaultExampleClass = "ReadCardData"
+}
+
+dependencies {
+    compile(
+            // Raspberry pi
+            "com.pi4j:pi4j-core:${pi4jVersion}",
+
+            // Logging
+            "org.slf4j:slf4j-api:${slf4jVersion}"
+    )
+    runtime(
+            // Logging
+            "org.slf4j:jcl-over-slf4j:${slf4jVersion}",
+            "ch.qos.logback:logback-classic:${logbackVersion}"
+    )
+    testImplementation(
+            "org.mockito:mockito-core:2.21.0",
+            "org.mockito:mockito-junit-jupiter:2.23.0",
+            "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    )
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'hu.whiterabbit.rc522forpi4j.example.' + (project.hasProperty('exampleClass') ? project.exampleClass : defaultExampleClass),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+tasks.withType(Jar) {
+    destinationDir = file("$rootDir/releases/")
+}
+
+shadowJar {
+    baseName = "rc522forpi4j-example-" + (project.hasProperty('exampleClass') ? project.exampleClass : defaultExampleClass)
+    destinationDir = file("examples")
+    classifier = ""
+    version = ""
+}
+
+wrapper {
+    gradleVersion = '4.10'
+}
