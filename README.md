@@ -15,6 +15,8 @@
     - [Raspberry package](#raspberry-package)
     - [RC522 package](#rc522-package)
     - [Util package](#util-package)
+  - [Releases](#releases)
+    - [v0.1.0](#v010)
 
 ## Introduction
 
@@ -153,3 +155,12 @@ Every block must be authenticated separately and you can use different authentic
 - ```AccessModeBit```: This is the logical representation of the sector trailer block's access bytes. This enum only used to convert the access mode data between the binary format and the ```BlockAccessMode``` class.
 - ```CardUtil```: Card related util methods. It helps to transform and process the card data. (access mode or displaying card related data)
 - ```DataUtil```: Data and value related util methods. It helps to convert between the different data types. (bit to bytes, bytes to hex, etc)
+
+## Releases
+
+### v0.1.0
+
+- Basic functionality, only read functions
+- Adding handlers, models, and helpers
+- Example classes
+- Basic structure for the project
