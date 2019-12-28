@@ -1,8 +1,7 @@
 package hu.whiterabbit.rc522forpi4j.model.auth;
 
-import hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock;
-
 import static hu.whiterabbit.rc522forpi4j.model.card.SectorTrailerBlock.SECTOR_TRAILER_BLOCK_INDEX;
+import static hu.whiterabbit.rc522forpi4j.util.DataUtil.bytesToHex;
 
 public class BlockAuthKey {
 
@@ -56,5 +55,13 @@ public class BlockAuthKey {
 		authKey.setKey(FACTORY_DEFAULT_KEY);
 
 		return authKey;
+	}
+
+	@Override
+	public String toString() {
+		return "BlockAuthKey{" +
+				" keyType=" + keyType +
+				", key=" + bytesToHex(key) +
+				" }";
 	}
 }

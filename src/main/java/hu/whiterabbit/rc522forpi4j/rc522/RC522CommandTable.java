@@ -48,7 +48,7 @@ class RC522CommandTable {
 	// bit position of the first bit-collision detected on the RF interface
 	static final byte PCD_AUTHENT = 0x0E;
 
-	// reserved for future use?
+	// resets the MFRC522
 	static final byte PCD_RESETPHASE = 0x0F;
 
 	// reserved for future use

@@ -7,6 +7,8 @@ import hu.whiterabbit.rc522forpi4j.model.card.Block;
 import hu.whiterabbit.rc522forpi4j.model.card.Card;
 import hu.whiterabbit.rc522forpi4j.model.card.Sector;
 
+import java.util.List;
+
 public interface RC522Client {
 
 	/**
@@ -21,6 +23,29 @@ public interface RC522Client {
 	 * @return Has any card near to the reader?
 	 */
 	boolean hasCard();
+
+	/**
+	 * Try to authenticate a block using the given security key. It will return the authentication's result
+	 *
+	 * @param authKey     This auth keys will be tried on the given block.
+	 * @param tagId       The target card's tag ID
+	 * @param sectorIndex Target block's sector index
+	 * @param blockIndex  Target block's index inside the sector
+	 * @return The authentication's result
+	 */
+	boolean checkAuth(BlockAuthKey authKey, byte[] tagId, int sectorIndex, int blockIndex);
+
+	/**
+	 * Try to authenticate a block using the given security keys. If success, it returns immediately the valid
+	 * BlockAuthKey object, otherwise if none of the keys are valid then null.
+	 *
+	 * @param authKeyList These auth keys will be tried on the given block. It will stop on the first success.
+	 * @param tagId       The target card's tag ID
+	 * @param sectorIndex Target block's sector index
+	 * @param blockIndex  Target block's index inside the sector
+	 * @return The valid auth key object or null if none of the keys are valid
+	 */
+	BlockAuthKey checkAuth(List<BlockAuthKey> authKeyList, byte[] tagId, int sectorIndex, int blockIndex);
 
 	/**
 	 * Select one of your card and read its tagId. If the selection has error or no rad is present then it will return

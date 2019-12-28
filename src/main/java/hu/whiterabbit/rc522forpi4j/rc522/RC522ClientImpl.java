@@ -12,6 +12,8 @@ import hu.whiterabbit.rc522forpi4j.util.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 import static hu.whiterabbit.rc522forpi4j.model.auth.BlockAuthKey.getFactoryDefaultKey;
 import static hu.whiterabbit.rc522forpi4j.model.auth.BlockAuthKey.getFactoryDefaultSectorKey;
 import static hu.whiterabbit.rc522forpi4j.model.card.Card.TAG_ID_SIZE;
@@ -71,6 +73,52 @@ public class RC522ClientImpl implements RC522Client {
 	}
 
 	/**
+	 * Try to authenticate a block using the given security key. It will return the authentication's result
+	 *
+	 * @param authKey     This auth keys will be tried on the given block.
+	 * @param tagId       The target card's tag ID
+	 * @param sectorIndex Target block's sector index
+	 * @param blockIndex  Target block's index inside the sector
+	 * @return The authentication's result
+	 */
+	@Override
+	public boolean checkAuth(BlockAuthKey authKey, byte[] tagId, int sectorIndex, int blockIndex) {
+		byte fullAddress = getFullAddress(sectorIndex, blockIndex);
+		CommunicationResult result = auth(fullAddress, tagId, authKey);
+
+		if (result.getStatus() == CommunicationStatus.AUTH_ERROR) {
+			rc522.selectCard();
+		}
+
+		return result.isSuccess();
+	}
+
+	/**
+	 * Try to authenticate a block using the given security keys. If success, it returns immediately the valid
+	 * BlockAuthKey object, otherwise if none of the keys are valid then null.
+	 *
+	 * @param authKeyList These auth keys will be tried on the given block. It will stop on the first success.
+	 * @param tagId       The target card's tag ID
+	 * @param sectorIndex Target block's sector index
+	 * @param blockIndex  Target block's index inside the sector
+	 * @return The valid auth key object or null if none of the keys are valid
+	 */
+	@Override
+	public BlockAuthKey checkAuth(List<BlockAuthKey> authKeyList, byte[] tagId, int sectorIndex, int blockIndex) {
+		for (BlockAuthKey authKey : authKeyList) {
+			CommunicationResult result = authAndReadData(sectorIndex, blockIndex, tagId, authKey);
+
+			if (result.isSuccess()) {
+				return authKey;
+			} else if (result.getStatus() == CommunicationStatus.AUTH_ERROR) {
+				rc522.selectCard();
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Select one of your card and read its tagId. If the selection has error or no rad is present then it will return
 	 * with a null.
 	 *
@@ -115,7 +163,7 @@ public class RC522ClientImpl implements RC522Client {
 
 		Card card = new Card(tagId);
 
-		logger.info("Card Read UID: (HEX) {}", card.getTagIdAsString());
+		logger.debug("Card Read UID: (HEX) {}", card.getTagIdAsString());
 
 		for (int sectorIndex = 0; sectorIndex < Card.SECTOR_COUNT; sectorIndex++) {
 			for (int blockIndex = 0; blockIndex < Sector.BLOCK_COUNT; blockIndex++) {
@@ -162,7 +210,7 @@ public class RC522ClientImpl implements RC522Client {
 
 		Sector sector = new Sector(sectorIndex);
 
-		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
+		logger.debug("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
 		for (int blockIndex = 0; blockIndex < Sector.BLOCK_COUNT; blockIndex++) {
 			CommunicationResult result = authAndReadData(sectorIndex, blockIndex, tagId, sectorAuthKey.getBlockAuthKey(blockIndex));
@@ -208,7 +256,7 @@ public class RC522ClientImpl implements RC522Client {
 			return null;
 		}
 
-		logger.info("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
+		logger.debug("Card Read UID: (HEX) {}", DataUtil.bytesToHex(tagId));
 
 		Block block;
 		SectorTrailerBlock sectorTrailerBlock;
