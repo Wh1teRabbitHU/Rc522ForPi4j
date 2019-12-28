@@ -17,6 +17,7 @@ public class TryToAuthCard {
 	private static final Logger logger = LoggerFactory.getLogger(TryToAuthCard.class);
 
 	private static final List<byte[]> availableKeys = Arrays.asList(
+			new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF},
 			new byte[]{(byte) 0xA0, (byte) 0xB0, (byte) 0xC0, (byte) 0xD0, (byte) 0xE0, (byte) 0xF0},
 			new byte[]{(byte) 0xA1, (byte) 0xB1, (byte) 0xC1, (byte) 0xD1, (byte) 0xE1, (byte) 0xF1},
 			new byte[]{(byte) 0xA0, (byte) 0xA1, (byte) 0xA2, (byte) 0xA3, (byte) 0xA4, (byte) 0xA5},
@@ -25,8 +26,7 @@ public class TryToAuthCard {
 			new byte[]{(byte) 0x1A, (byte) 0x98, (byte) 0x2C, (byte) 0x7E, (byte) 0x45, (byte) 0x9A},
 			new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00},
 			new byte[]{(byte) 0xD3, (byte) 0xF7, (byte) 0xD3, (byte) 0xF7, (byte) 0xD3, (byte) 0xF7},
-			new byte[]{(byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD, (byte) 0xEE, (byte) 0xFF},
-			new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF}
+			new byte[]{(byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD, (byte) 0xEE, (byte) 0xFF}
 	);
 
 	public static void main(String[] args) throws InterruptedException {
@@ -68,8 +68,6 @@ public class TryToAuthCard {
 							authKey = authKeyA;
 
 							break;
-						} else {
-							logger.info("Fail: {}", authKeyA);
 						}
 
 						boolean bKeyResult = rc522Client.checkAuth(authKeyB, tagId, sectorIndex, blockIndex);
@@ -78,15 +76,13 @@ public class TryToAuthCard {
 							authKey = authKeyB;
 
 							break;
-						} else {
-							logger.info("Fail: {}", authKeyB);
 						}
 					}
 
 					if (authKey == null) {
 						logger.info("Couldn't authenticate this block with the given key list!");
 					} else {
-						logger.info("Success: {}", authKey);
+						logger.info("Successfully authenticated this block with the following key: {}", authKey);
 					}
 					logger.info("-------------------------------------------------------------------------");
 				}
