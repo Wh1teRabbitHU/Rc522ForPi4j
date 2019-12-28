@@ -3,17 +3,13 @@ package hu.whiterabbit.rc522forpi4j.rc522;
 //@SuppressWarnings("unused")
 class RC522CommandTable {
 
-	// reserved for future use?
-	static final byte PCD_IDLE = 0x00;
-
-	// starts and stops command execution
+	/**
+	 * Starts and stops command execution. The CommandValue used to determine the command code
+	 */
 	static final byte COMMAND_REG = 0x01;
 
 	// enable and disable interrupt request control bits
 	static final byte COMM_I_EN_REG = 0x02;
-
-	// enable and disable interrupt request control bits
-	static final byte DIVL_EN_REG = 0x03;
 
 	// interrupt request bits
 	static final byte COMM_IRQ_REG = 0x04;
@@ -44,12 +40,6 @@ class RC522CommandTable {
 
 	// adjustments for bit-oriented frames
 	static final byte BIT_FRAMING_REG = 0x0D;
-
-	// bit position of the first bit-collision detected on the RF interface
-	static final byte PCD_AUTHENT = 0x0E;
-
-	// resets the MFRC522
-	static final byte PCD_RESETPHASE = 0x0F;
 
 	// reserved for future use
 	static final byte RESERVED_10 = 0x10;

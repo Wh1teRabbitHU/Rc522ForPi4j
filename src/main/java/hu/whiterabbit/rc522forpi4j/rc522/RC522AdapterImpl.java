@@ -55,7 +55,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 	 */
 	@Override
 	public void reset() {
-		writeRC522(COMMAND_REG, PCD_RESETPHASE);
+		runCommand(CommandValue.SOFT_RESET);
 		writeRC522(T_MODE_REG, (byte) 0x8D);
 		writeRC522(T_PRESCALER_REG, (byte) 0x3E);
 		writeRC522(T_RELOAD_REG_L, (byte) 30);
@@ -111,7 +111,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 		arraycopy(key, 0, data, 2, 6);
 		arraycopy(uid, 0, data, 8, 4);
 
-		CommunicationResult result = writeCard(PCD_AUTHENT, data);
+		CommunicationResult result = writeCard(CommandValue.MF_AUTHENT, data);
 
 		if ((readRC522(STATUS_2_REG) & 0x08) == 0) {
 			result.setStatus(CommunicationStatus.AUTH_ERROR);
@@ -136,7 +136,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		calculateCRC(data);
 
-		CommunicationResult result = writeCard(CONTROL_REG, data);
+		CommunicationResult result = writeCard(CommandValue.TRANSCEIVE, data);
 
 		boolean isDataLengthValid = result.getLength() == BYTE_COUNT;
 
@@ -162,7 +162,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		calculateCRC(buff);
 
-		CommunicationResult result = writeCard(CONTROL_REG, buff);
+		CommunicationResult result = writeCard(CommandValue.TRANSCEIVE, buff);
 		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
 			result.setStatus(CommunicationStatus.ERROR);
 
@@ -173,7 +173,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		calculateCRC(buffWrite);
 
-		result = writeCard(CONTROL_REG, buffWrite);
+		result = writeCard(CommandValue.TRANSCEIVE, buffWrite);
 		if (!result.isSuccess() || result.getBits() != 4 || (result.getDataByte(0) & 0x0F) != 0x0A) {
 			result.setStatus(CommunicationStatus.ERROR);
 
@@ -193,7 +193,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 		serialNumber[0] = ANTICOLLISION_CL1_1;
 		serialNumber[1] = ANTICOLLISION_CL1_2;
 
-		CommunicationResult result = writeCard(CONTROL_REG, serialNumber);
+		CommunicationResult result = writeCard(CommandValue.TRANSCEIVE, serialNumber);
 
 		if (result.isSuccess()) {
 			if (result.getLength() == 5) {
@@ -226,7 +226,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		calculateCRC(data);
 
-		return writeCard(CONTROL_REG, data);
+		return writeCard(CommandValue.TRANSCEIVE, data);
 	}
 
 	private CommunicationResult request() {
@@ -236,7 +236,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		tagType[0] = RF_CFG_REG;
 
-		CommunicationResult result = writeCard(CONTROL_REG, tagType);
+		CommunicationResult result = writeCard(CommandValue.TRANSCEIVE, tagType);
 
 		if (!result.isSuccess()) {
 			result.setStatus(CommunicationStatus.NO_TAG);
@@ -245,6 +245,10 @@ public class RC522AdapterImpl implements RC522Adapter {
 		}
 
 		return result;
+	}
+
+	private void runCommand(CommandValue commandValue) {
+		writeRC522(COMMAND_REG, commandValue.code);
 	}
 
 	private void writeRC522(byte address, byte value) {
@@ -280,7 +284,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 			writeRC522(FIFO_DATA_REG, data[i]);
 		}
 
-		writeRC522(COMMAND_REG, DIVL_EN_REG);
+		runCommand(CommandValue.CALC_CRC);
 
 		int n;
 		int i = 255;
@@ -316,7 +320,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 		clearBitMask(TX_CONTROL_REG, (byte) 0x03);
 	}
 
-	private CommunicationResult writeCard(byte command, byte[] sendingData) {
+	private CommunicationResult writeCard(CommandValue command, byte[] sendingData) {
 		CommunicationResult result = new CommunicationResult();
 		byte irq, irq_wait, lastBits;
 		int n, i;
@@ -325,10 +329,10 @@ public class RC522AdapterImpl implements RC522Adapter {
 
 		int dataLen = sendingData.length;
 
-		if (command == PCD_AUTHENT) {
+		if (command == CommandValue.MF_AUTHENT) {
 			irq = 0x12;
 			irq_wait = 0x10;
-		} else if (command == CONTROL_REG) {
+		} else if (command == CommandValue.TRANSCEIVE) {
 			irq = 0x77;
 			irq_wait = 0x30;
 		} else {
@@ -340,13 +344,13 @@ public class RC522AdapterImpl implements RC522Adapter {
 		clearBitMask(COMM_IRQ_REG, (byte) 0x80);
 		setBitMask(FIFO_LEVEL_REG, (byte) 0x80);
 
-		writeRC522(COMMAND_REG, PCD_IDLE);
+		runCommand(CommandValue.IDLE);
 
 		for (i = 0; i < dataLen; i++)
 			writeRC522(FIFO_DATA_REG, sendingData[i]);
 
-		writeRC522(COMMAND_REG, command);
-		if (command == CONTROL_REG)
+		runCommand(command);
+		if (command == CommandValue.TRANSCEIVE)
 			setBitMask(BIT_FRAMING_REG, (byte) 0x80);
 
 		i = 2000;
@@ -370,7 +374,7 @@ public class RC522AdapterImpl implements RC522Adapter {
 				status = MI_NOTAGERR;
 			}
 
-			if (command == CONTROL_REG) {
+			if (command == CommandValue.TRANSCEIVE) {
 				n = readRC522(FIFO_LEVEL_REG);
 				lastBits = (byte) (readRC522(CONTROL_REG) & 0x07);
 
